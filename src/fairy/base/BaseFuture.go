@@ -20,6 +20,10 @@ func (self *BaseFuture) New() {
 	self.result = fairy.FUTURE_RESULT_NONE
 }
 
+func (self *BaseFuture) Reset() {
+	self.result = fairy.FUTURE_RESULT_NONE
+}
+
 func (self *BaseFuture) Succeed() bool {
 	return atomic.LoadInt32(&self.result) == fairy.FUTURE_RESULT_SUCCEED
 }
@@ -59,6 +63,18 @@ func (self *BaseFuture) Wait(msec int64) bool {
 
 func (self *BaseFuture) Done(result int) {
 	atomic.CompareAndSwapInt32(&self.result, fairy.FUTURE_RESULT_NONE, int32(result))
+}
+
+func (self *BaseFuture) DoneSucceed() {
+	self.Done(fairy.FUTURE_RESULT_SUCCEED)
+}
+
+func (self *BaseFuture) DoneFail() {
+	self.Done(fairy.FUTURE_RESULT_FAIL)
+}
+
+func (self *BaseFuture) DoneTimeout() {
+	self.Done(fairy.FUTURE_RESULT_TIMEOUT)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////

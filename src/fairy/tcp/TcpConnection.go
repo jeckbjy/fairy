@@ -1,33 +1,61 @@
 package tcp
 
 import (
+	"container/list"
 	"fairy"
 	"fairy/base"
 	"net"
 	"sync"
 )
 
+const (
+	WRITE_FLAG_FINISH  = 0 // 写完成
+	WRITE_FLAG_WRITING = 1 // 写当中
+)
+
 func NewConnection(tran fairy.Transport, filters fairy.FilterChain, serverSide bool, ctype int) *TcpConnection {
 	tcp_conn := &TcpConnection{}
 	tcp_conn.BaseConnection.New(tran, filters, serverSide)
 	tcp_conn.SetType(ctype)
+	tcp_conn.reader = fairy.NewBuffer()
+	tcp_conn.writerLock = &sync.Mutex{}
 	return tcp_conn
 }
 
+// todo:读，写限流控制??
 type TcpConnection struct {
 	base.BaseConnection
 	net.Conn
-	reader    *fairy.Buffer
-	stopFlag  chan bool
-	waitGroup sync.WaitGroup
+	writerFuture *base.BaseFuture // 用于阻塞写数据完成
+	writerLock   *sync.Mutex      // 写锁
+	writerCond   *sync.Cond
+	writer       *list.List
+	reader       *fairy.Buffer
+	stopFlag     chan bool
+	waitGroup    sync.WaitGroup
 }
 
 func (self *TcpConnection) Flush() {
-
+	if self.writerFuture != nil {
+		// 阻塞到所有数据写完
+		self.writerFuture.Wait(-1)
+	}
 }
 
 func (self *TcpConnection) Write(buffer *fairy.Buffer) {
+	self.writerLock.Lock()
+	// check delay run write loop
+	if self.writer == nil {
+		self.writer = list.New()
+		self.writerCond = sync.NewCond(self.writerLock)
+		self.writerFuture = base.NewFuture()
+		go self.runWriteLoop()
+	}
+	self.writer.PushBack(buffer)
+	self.writerFuture.Reset()
 
+	self.writerCond.Signal()
+	self.writerLock.Unlock()
 }
 
 func (self *TcpConnection) Read() *fairy.Buffer {
@@ -89,7 +117,27 @@ func (self *TcpConnection) runWriteLoop() {
 		case <-self.stopFlag:
 			break
 		default:
+			bufferList := list.List{}
 			// write buffer,轮询
+			self.writerLock.Lock()
+			for self.writer.Len() == 0 {
+				// 会先unlock,再lock
+				self.writerFuture.DoneSucceed()
+				self.writerCond.Wait()
+			}
+
+			// swap buffer
+			bufferList = *self.writer
+			self.writer.Init()
+			self.writerLock.Unlock()
+			// write all buffer
+			for iter := bufferList.Front(); iter != nil; iter = iter.Next() {
+				buffer := iter.Value.(*fairy.Buffer)
+				if err := buffer.SendAll(self.Conn); err != nil {
+					self.HandleError(self, err)
+					break
+				}
+			}
 		}
 	}
 }
