@@ -3,18 +3,18 @@ package log
 type Logger struct {
 }
 
-func Trace() {
+func Trace(format string, args ...interface{}) {
 
 }
 
-func Debug() {
+func Debug(format string, args ...interface{}) {
 
 }
 
-func Error() {
+func Error(format string, args ...interface{}) {
 
 }
 
-func Fatal() {
+func Fatal(format string, args ...interface{}) {
 
 }

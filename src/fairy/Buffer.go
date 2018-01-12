@@ -3,7 +3,7 @@ package fairy
 import (
 	"container/list"
 	"errors"
-	"fairy/util"
+	"fmt"
 	"io"
 	"math"
 )
@@ -214,7 +214,7 @@ func (self *Buffer) Seek(offset int, whence int) error {
 	}
 
 	if pos < 0 || pos > self.length {
-		return util.NewError("seek overflow!")
+		return fmt.Errorf("seek overflow!")
 	}
 
 	if self.position == pos {

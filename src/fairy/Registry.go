@@ -1,14 +1,13 @@
 package fairy
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
 
 var gRegistry *Registry
 
-func GetGlobalRegistry() *Registry {
+func GetRegistry() *Registry {
 	if gRegistry == nil {
 		gRegistry = NewRegistry()
 	}
@@ -35,10 +34,6 @@ type IdMap map[uint]*MsgInfo
 type NameMap map[string]*MsgInfo
 type TypeMap map[reflect.Type]*MsgInfo
 
-// 消息分发
-// type Dispatcher struct {
-// }
-
 // 消息注册：name->type,id->type,type->(name,id)
 type Registry struct {
 	idMap   IdMap
@@ -47,98 +42,102 @@ type Registry struct {
 }
 
 func (self *Registry) Register(msg interface{}) error {
-	msg_type := reflect.TypeOf(msg)
-	msg_name := msg_type.Name()
-	if _, ok := self.typeMap[msg_type]; ok {
-		return errors.New(fmt.Sprintf("msg_type has registered![msg_name=%s]", msg_type.Name()))
+	msgType := reflect.TypeOf(msg)
+	msgName := msgType.Name()
+	if _, ok := self.typeMap[msgType]; ok {
+		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgType.Name())
 	}
 
-	if _, ok := self.nameMap[msg_name]; ok {
-		return errors.New(fmt.Sprintf("msg_name has registered![msg_name=%s]", msg_type.Name()))
+	if _, ok := self.nameMap[msgName]; ok {
+		return fmt.Errorf("msg_name has registered![msg_name=%s]", msgType.Name())
 	}
 
-	info := &MsgInfo{Id: 0, Name: msg_type.Name(), Type: msg_type}
+	info := &MsgInfo{Id: 0, Name: msgType.Name(), Type: msgType}
 
-	self.typeMap[msg_type] = info
-	self.nameMap[msg_name] = info
+	self.typeMap[msgType] = info
+	self.nameMap[msgName] = info
 
 	return nil
 }
 
-func (self *Registry) RegisterId(msg interface{}, msg_id uint) error {
-	msg_type := reflect.TypeOf(msg)
-	msg_name := msg_type.Name()
+func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
+	msgType := reflect.TypeOf(msg)
+	msgName := msgType.Name()
 
-	if _, ok := self.typeMap[msg_type]; ok {
-		return errors.New(fmt.Sprintf("msg_type has registered![msg_name=%s]", msg_name))
+	if msgId <= 0 {
+		return fmt.Errorf("msgid must be greator than zero")
 	}
 
-	if _, ok := self.nameMap[msg_name]; ok {
-		return errors.New(fmt.Sprintf("msg_name has registered![msg_name=%s]", msg_name))
+	if _, ok := self.typeMap[msgType]; ok {
+		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgName)
 	}
 
-	if _, ok := self.idMap[msg_id]; ok {
-		return errors.New(fmt.Sprintf("msg_id has registered![msg_name=%s, msg_id=%v]", msg_name, msg_id))
+	if _, ok := self.nameMap[msgName]; ok {
+		return fmt.Errorf("msg_name has registered![msg_name=%s]", msgName)
 	}
 
-	info := &MsgInfo{Id: msg_id, Name: msg_type.Name(), Type: msg_type}
-	self.typeMap[msg_type] = info
-	self.nameMap[msg_name] = info
-	self.idMap[msg_id] = info
+	if _, ok := self.idMap[msgId]; ok {
+		return fmt.Errorf("msg_id has registered![msg_name=%s, msg_id=%v]", msgName, msgId)
+	}
+
+	info := &MsgInfo{Id: msgId, Name: msgType.Name(), Type: msgType}
+	self.typeMap[msgType] = info
+	self.nameMap[msgName] = info
+	self.idMap[msgId] = info
 
 	return nil
 }
 
 func (self *Registry) Remove(msg interface{}) bool {
-	msg_type := reflect.TypeOf(msg)
-	info, ok := self.typeMap[msg_type]
+	msgType := reflect.TypeOf(msg)
+	info, ok := self.typeMap[msgType]
 	if ok {
-		delete(self.typeMap, msg_type)
+		delete(self.typeMap, msgType)
 		delete(self.nameMap, info.Name)
 		if info.Id != 0 {
 			delete(self.idMap, info.Id)
 		}
 
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 func (self *Registry) GetName(msg interface{}) string {
-	msg_type := reflect.TypeOf(msg)
-	info, ok := self.typeMap[msg_type]
+	msgType := reflect.TypeOf(msg)
+	info, ok := self.typeMap[msgType]
 	if ok {
 		return info.Name
-	} else {
-		return ""
 	}
+
+	return ""
 }
 
 func (self *Registry) GetId(msg interface{}) uint {
-	msg_type := reflect.TypeOf(msg)
-	info, ok := self.typeMap[msg_type]
+	msgType := reflect.TypeOf(msg)
+	info, ok := self.typeMap[msgType]
 	if ok {
 		return info.Id
-	} else {
-		return 0
 	}
+
+	return 0
 }
 
 func (self *Registry) CreateByName(name string) interface{} {
 	info, ok := self.nameMap[name]
 	if ok {
 		return reflect.New(info.Type)
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func (self *Registry) CreateById(id uint) interface{} {
 	info, ok := self.idMap[id]
 	if ok {
 		return reflect.New(info.Type)
-	} else {
-		return nil
 	}
+
+	return nil
 }

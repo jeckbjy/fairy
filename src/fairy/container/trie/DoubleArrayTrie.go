@@ -1,0 +1,5 @@
+package trie
+
+func NewDATrie() {
+
+}

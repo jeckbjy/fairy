@@ -6,11 +6,11 @@ import (
 	"fairy/base"
 )
 
-func NewDefaultStringIdentity() *StringIdentity {
-	return NewStringIdentity(fairy.GetGlobalRegistry())
+func NewStringIdentity() *StringIdentity {
+	return NewStringIdentityEx(fairy.GetRegistry())
 }
 
-func NewStringIdentity(registry *fairy.Registry) *StringIdentity {
+func NewStringIdentityEx(registry *fairy.Registry) *StringIdentity {
 	identity := &StringIdentity{}
 	identity.Registry = registry
 	return identity

@@ -4,12 +4,13 @@ import (
 	"fairy"
 	"fairy/base"
 	"fairy/util"
+	"fmt"
 	"io"
 	"math"
 )
 
 func NewDefaultIntegerIdentity() *IntegerIdentity {
-	return NewIntegerIdentity(fairy.GetGlobalRegistry(), true)
+	return NewIntegerIdentity(fairy.GetRegistry(), true)
 }
 
 func NewIntegerIdentity(registry *fairy.Registry, littleEndian bool) *IntegerIdentity {
@@ -36,7 +37,7 @@ func (self *IntegerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) 
 	// 解析ID
 	id := uint(util.GetUint16(data, self.littleEndian))
 	if id == 0 {
-		return nil, util.NewError("IntegerIdentity:msgid is zero!")
+		return nil, fmt.Errorf("IntegerIdentity:msgid is zero!")
 	}
 
 	// create packet
@@ -46,7 +47,7 @@ func (self *IntegerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) 
 	// create message
 	msg := self.CreateById(id)
 	if msg == nil {
-		return packet, util.NewError("IntegerIdentity: create message fail,msgid=%v!", id)
+		return packet, fmt.Errorf("IntegerIdentity: create message fail,msgid=%v!", id)
 	}
 	packet.SetMessage(msg)
 	return packet, nil
@@ -63,11 +64,11 @@ func (self *IntegerIdentity) Encode(buffer *fairy.Buffer, data interface{}) erro
 	}
 
 	if id == 0 {
-		return util.NewError("IntegerIdentity:cannot find msgid!")
+		return fmt.Errorf("IntegerIdentity:cannot find msgid!")
 	}
 
 	if id >= math.MaxUint16 {
-		return util.NewError("IntegerIdentity:msgid overflow!")
+		return fmt.Errorf("IntegerIdentity:msgid overflow!")
 	}
 
 	id_buff := make([]byte, 2)

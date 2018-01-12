@@ -16,7 +16,7 @@ func StartClient() {
 	transport.AddFilters(
 		filter.NewTransportFilter(),
 		filter.NewFrameFilter(frame.NewVarintLengthFrame()),
-		filter.NewPacketFilter(identity.NewDefaultStringIdentity(), codec.NewJsonCodec()))
+		filter.NewPacketFilter(identity.NewStringIdentity(), codec.NewJsonCodec()))
 
 	transport.Connect("127.0.0.1:8888", 0)
 	transport.Start(true)
