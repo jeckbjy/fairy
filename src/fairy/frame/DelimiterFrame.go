@@ -6,6 +6,10 @@ import (
 	"io"
 )
 
+func NewLineFrame() fairy.Frame {
+	return NewDelimiterFrame("\n")
+}
+
 func NewDelimiterFrame(delimiter string) fairy.Frame {
 	frame := &DelimiterFrame{}
 	frame.delimiter = delimiter

@@ -1,37 +1,8 @@
-package timer
+package fairy
 
-import (
-	"fairy/util"
-)
+import "fairy/util"
 
-/*
-example 1:
-func OnTimeout(t *timer.Timer) {
-	fmt.Println("timeout")
-}
-1:
-t := timer.New(10, true, OnTimeout)
-t.Start()
-2:
-timer.Start(util.Now() + 10, OnTimeout)
-3:
-timer.StartDelay(10, OnTimeout)
-
-example 2:
-func OnTimeout(t *timer.Timer) {
-	if t.Count < 10 {
-		t.Restart(10, true)
-	}
-}
-
-func Start() {
-	//timer.Start(10, OnTimeout)
-	t := timer.New(10, true, OnTimeout)
-	t.Tag = 1
-	t.Data = 1
-	t.Start()
-}
-*/
+const TIMER_DELAY_MAX = 30 * 24 * 3600 * 1000
 type Callback func(*Timer)
 
 type Timer struct {
@@ -75,8 +46,8 @@ func (self *Timer) IsDelayMode() bool {
 	return self.Delay != 0
 }
 
-func (self *Timer) Restart(timestamp int64, delayMode bool) {
-	if delayMode {
+func (self *Timer) Restart(timestamp int64) {
+	if timestamp < TIMER_DELAY_MAX {
 		self.Delay = int(timestamp)
 		timestamp = util.Now() + timestamp
 	}
@@ -109,9 +80,9 @@ func (self *Timer) IsRunning() bool {
 /*
 Create Timer Func
 */
-func New(timestamp int64, delayMode bool, cb Callback) *Timer {
+func NewTimer(timestamp int64, cb Callback) *Timer {
 	delay := 0
-	if delayMode {
+	if timestamp < TIMER_DELAY_MAX {
 		delay = int(timestamp)
 		timestamp = util.Now() + timestamp
 	}
@@ -123,14 +94,8 @@ func New(timestamp int64, delayMode bool, cb Callback) *Timer {
 	return t
 }
 
-func Start(timestamp int64, cb Callback) *Timer {
+func StartTimer(timestamp int64, cb Callback) *Timer {
 	t := New(timestamp, false, cb)
-	t.Start()
-	return t
-}
-
-func StartDelay(delay int, cb Callback) *Timer {
-	t := New(int64(delay), true, cb)
 	t.Start()
 	return t
 }

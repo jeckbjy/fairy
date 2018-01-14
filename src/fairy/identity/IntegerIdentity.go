@@ -9,11 +9,11 @@ import (
 	"math"
 )
 
-func NewDefaultIntegerIdentity() *IntegerIdentity {
-	return NewIntegerIdentity(fairy.GetRegistry(), true)
+func NewIntegerIdentity() *IntegerIdentity {
+	return NewIntegerIdentityEx(fairy.GetRegistry(), true)
 }
 
-func NewIntegerIdentity(registry *fairy.Registry, littleEndian bool) *IntegerIdentity {
+func NewIntegerIdentityEx(registry *fairy.Registry, littleEndian bool) *IntegerIdentity {
 	identity := &IntegerIdentity{}
 	identity.Registry = registry
 	identity.littleEndian = littleEndian

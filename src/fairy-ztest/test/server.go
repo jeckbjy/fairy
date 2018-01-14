@@ -8,7 +8,6 @@ import (
 	"fairy/identity"
 	"fairy/log"
 	"fairy/tcp"
-	"fairy/timer"
 	"fmt"
 )
 
@@ -25,16 +24,14 @@ func StartServer() {
 	fmt.Println("Start Server!")
 
 	// 定时器
-	// fairy.StartTimer()
-	// fairy.StartDelayTimer()
-	timer.StartDelay(10, OnTimeout)
+	fairy.StartTimer(10, OnTimeout)
 	// register
 	fairy.RegisterHandler(1, OnLogin)
 
 	transport := tcp.NewTransport()
 	transport.AddFilters(
 		filter.NewTransportFilter(),
-		filter.NewFrameFilter(frame.NewVarintLengthFrame()),
+		filter.NewFrameFilter(frame.NewLineFrame()),
 		filter.NewPacketFilter(identity.NewStringIdentity(), codec.NewJsonCodec()),
 		filter.NewExecutorFilter())
 

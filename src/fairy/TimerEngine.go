@@ -1,4 +1,4 @@
-package timer
+package fairy
 
 import "fairy/util"
 
@@ -14,6 +14,7 @@ func GetEngine() *TimerEngine {
 
 func NewEngine() *TimerEngine {
 	engine := &TimerEngine{}
+	engine.executor = GetExecutor()
 	return engine
 }
 
@@ -51,14 +52,37 @@ type TimerEngine struct {
 	timestamp int64
 	count     int
 	wheels    []*Wheel
+	executor  *Executor
+	pendings  *Timer
+}
+
+func (self *TimerEngine) SetExecutor(exec *Executor) {
+	self.executor = exec
+}
+
+func (self *TimerEngine) AddTimer(timer *Timer) {
+	self.count++
+	self.push(timer)
+}
+
+func (self *TimerEngine) DelTimer(timer *Timer) {
+	self.count--
+	// owner??
+	// del
+}
+
+func (self *TimerEngine) Run() {
+	go func () {
+		// update
+	}()
 }
 
 func (self *TimerEngine) Update() {
 	now := util.Now()
-	self.UpdateByTime(now)
+	self.Tick(now)
 }
 
-func (self *TimerEngine) UpdateByTime(now int64) {
+func (self *TimerEngine) Tick(now int64) {
 	if now < self.timestamp {
 		// reset all timer
 		// timers := &List{}
@@ -87,6 +111,13 @@ func (self *TimerEngine) UpdateByTime(now int64) {
 			}
 		}
 	}
+
+	// pendings ???
+	// self.executor.Dispatch(NewTimerEvent(self))
+}
+
+func (self *TimerEngine) Invoke() {
+	// invoke all pending timers
 }
 
 func (self *TimerEngine) push(timer *Timer) {
@@ -105,15 +136,4 @@ func (self *TimerEngine) push(timer *Timer) {
 			break
 		}
 	}
-}
-
-func (self *TimerEngine) AddTimer(timer *Timer) {
-	self.count++
-	self.push(timer)
-}
-
-func (self *TimerEngine) DelTimer(timer *Timer) {
-	self.count--
-	// owner??
-	// del
 }

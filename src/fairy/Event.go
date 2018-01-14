@@ -23,6 +23,22 @@ func (self *FuncEvent) Process() {
 }
 
 ////////////////////////////////////////////////////////////
+// TimerEvent
+////////////////////////////////////////////////////////////
+func NewTimerEvent(e *TimerEngine) *TimerEvent {
+	ev := &TimerEvent{engine:e}
+	return ev
+}
+
+type TimerEvent struct {
+	engine *TimerEngine
+}
+
+func (self *TimerEvent) Process() {
+	self.engine.Invoke()
+}
+
+////////////////////////////////////////////////////////////
 // PacketEvent
 ////////////////////////////////////////////////////////////
 func NewPacketEvent(conn Connection, packet Packet, handler Handler) *PacketEvent {
