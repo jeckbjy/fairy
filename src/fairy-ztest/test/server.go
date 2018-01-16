@@ -6,7 +6,6 @@ import (
 	"fairy/filter"
 	"fairy/frame"
 	"fairy/identity"
-	"fairy/log"
 	"fairy/tcp"
 	"fmt"
 )
@@ -16,8 +15,8 @@ func OnLogin(conn fairy.Connection, packet fairy.Packet) {
 	fmt.Println(msg)
 }
 
-func OnTimeout(t *timer.Timer) {
-	log.Debug("OnTimeout!")
+func OnTimeout(t *fairy.Timer) {
+	fairy.Debug("OnTimeout!")
 }
 
 func StartServer() {

@@ -1,7 +1,6 @@
 package fairy
 
 import (
-	"fairy/timer"
 	"sync"
 )
 
@@ -26,23 +25,28 @@ func NewExecutor() *Executor {
 一:场景需求:
 1:单独主业务线程
 2:主业务线程+多个子模块线程，消息分发到特定的线程上
-二:多线程
-启动一个多线程，回调回来时要求在主线程执行一个回调
+二:线程池
+启动一个goroutine，回调回来时要求在主线程执行一个回调
 三:定时器触发时机
 */
 const EVENT_QUEUE_MAIN = 0
 
 type Executor struct {
-	stop        chan bool
-	workQueue   []*EventQueue
-	workCount   int
-	mutex       *sync.Mutex
-	waitGroup   *sync.WaitGroup
-	timerEngine *timer.TimerEngine
+	stop      chan bool
+	workQueue []*EventQueue
+	workCount int
+	mutex     *sync.Mutex
+	waitGroup *sync.WaitGroup
 }
 
 func (self *Executor) Stop() {
-	self.Wait()
+	self.mutex.Lock()
+	for _, wq := range self.workQueue {
+		wq.Stop()
+	}
+	self.mutex.Unlock()
+
+	self.waitGroup.Wait()
 }
 
 func (self *Executor) Wait() {

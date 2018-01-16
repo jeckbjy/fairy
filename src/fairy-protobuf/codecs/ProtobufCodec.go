@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func NewProtobufCodec() cute.Codec {
+func NewProtobufCodec() fairy.Codec {
 	codec := &ProtobufCodec{}
 	return codec
 }

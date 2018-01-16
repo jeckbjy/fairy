@@ -21,7 +21,7 @@ func NewDispatcher() *Dispatcher {
 	return dispatcher
 }
 
-// 注册回调函数
+// 注册回调函数,AddHandler??
 func RegisterHandler(key interface{}, cb HandlerCallback) {
 	RegisterHandlerEx(key, cb, 0)
 }

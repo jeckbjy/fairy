@@ -1,43 +1,40 @@
 package fairy
 
-import "fairy/util"
+import (
+	"container/list"
+	"fairy/util"
+	"sync"
+	"time"
+)
 
 var gTimerEngine *TimerEngine
 
-func GetEngine() *TimerEngine {
+func GetTimerEngine() *TimerEngine {
 	if gTimerEngine == nil {
-		gTimerEngine = NewEngine()
+		gTimerEngine = NewTimerEngine()
 	}
 
 	return gTimerEngine
 }
 
-func NewEngine() *TimerEngine {
+func NewTimerEngine() *TimerEngine {
 	engine := &TimerEngine{}
 	engine.executor = GetExecutor()
 	return engine
 }
 
-type List struct {
-	head *Timer
-}
-
-func (self *List) Push(timer *Timer) {
-
-}
-
-func (self *List) Pop(timer *Timer) {
-
-}
-
 type Wheel struct {
-	slots   []*List
+	slots   []*list.List
 	index   int
 	offset  uint
 	timeMax int64
 }
 
-func (self *Wheel) Tick() bool {
+func (self *Wheel) Current() *list.List {
+	return self.slots[self.index]
+}
+
+func (self *Wheel) Step() bool {
 	self.index++
 	if self.index >= len(self.slots) {
 		self.index = 0
@@ -50,14 +47,21 @@ func (self *Wheel) Tick() bool {
 type TimerEngine struct {
 	start     int64
 	timestamp int64
+	interval  int64
 	count     int
 	wheels    []*Wheel
 	executor  *Executor
-	pendings  *Timer
+	pendings  *list.List
+	mutex     sync.Mutex
+	stopped   bool
 }
 
 func (self *TimerEngine) SetExecutor(exec *Executor) {
 	self.executor = exec
+}
+
+func (self *TimerEngine) SetInterval(interval int) {
+	self.interval = int64(interval) * int64(time.Millisecond)
 }
 
 func (self *TimerEngine) AddTimer(timer *Timer) {
@@ -67,14 +71,24 @@ func (self *TimerEngine) AddTimer(timer *Timer) {
 
 func (self *TimerEngine) DelTimer(timer *Timer) {
 	self.count--
-	// owner??
-	// del
+	// remove by ?
 }
 
-func (self *TimerEngine) Run() {
-	go func () {
-		// update
-	}()
+func (self *TimerEngine) Start() {
+	if self.stopped {
+		self.stopped = false
+		go func() {
+			self.Update()
+			time.Sleep(time.Duration(self.interval) * time.Millisecond)
+		}()
+	}
+}
+
+func (self *TimerEngine) Stop() {
+	if !self.stopped {
+		self.stopped = true
+		// notify
+	}
 }
 
 func (self *TimerEngine) Update() {
@@ -83,6 +97,7 @@ func (self *TimerEngine) Update() {
 }
 
 func (self *TimerEngine) Tick(now int64) {
+	pendings := list.List{}
 	if now < self.timestamp {
 		// reset all timer
 		// timers := &List{}
@@ -97,14 +112,23 @@ func (self *TimerEngine) Tick(now int64) {
 		for ticks > 0 {
 			wheel := self.wheels[0]
 			// process timer list
-			// self.wheels[0].
+			timers := wheel.Current()
+			for iter := timers.Front(); iter != nil; iter = iter.Next() {
+				timer := iter.Value.(*Timer)
+				timer.elem = nil
+				if self.executor == nil || timer.Async {
+					timer.Invoke()
+				} else {
+					pendings.PushBack(timer)
+				}
+			}
 
 			// step tick
-			if wheel.Tick() {
+			if wheel.Step() {
 				for i := 1; i < len(self.wheels); i++ {
 					next_wheel := self.wheels[i]
 					// degrade timer
-					if next_wheel.Tick() {
+					if next_wheel.Step() {
 						break
 					}
 				}
@@ -112,12 +136,29 @@ func (self *TimerEngine) Tick(now int64) {
 		}
 	}
 
-	// pendings ???
-	// self.executor.Dispatch(NewTimerEvent(self))
+	// pendings for executor invoke
+	if pendings.Len() > 0 {
+		self.mutex.Lock()
+		self.pendings.PushBackList(&pendings)
+		self.executor.Dispatch(NewTimerEvent(self))
+		self.mutex.Unlock()
+	}
 }
 
 func (self *TimerEngine) Invoke() {
 	// invoke all pending timers
+	pendings := list.List{}
+	self.mutex.Lock()
+	pendings = *self.pendings
+	self.pendings.Init()
+	self.mutex.Unlock()
+
+	// invoke
+	for iter := pendings.Front(); iter != nil; iter = iter.Next() {
+		timer := iter.Value.(*Timer)
+		timer.elem = nil
+		timer.Invoke()
+	}
 }
 
 func (self *TimerEngine) push(timer *Timer) {
@@ -132,7 +173,7 @@ func (self *TimerEngine) push(timer *Timer) {
 		wheel := self.wheels[i]
 		if delta < wheel.timeMax {
 			index := uint64(delta) >> wheel.offset
-			wheel.slots[index].Push(timer)
+			wheel.slots[index].PushBack(timer)
 			break
 		}
 	}

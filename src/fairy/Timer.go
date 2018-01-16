@@ -1,17 +1,20 @@
 package fairy
 
-import "fairy/util"
+import (
+	"container/list"
+	"fairy/util"
+)
 
 const TIMER_DELAY_MAX = 30 * 24 * 3600 * 1000
-type Callback func(*Timer)
+
+type TimerCallback func(*Timer)
 
 type Timer struct {
-	owner     *List
-	prev      *Timer
-	next      *Timer
+	elem      *list.Element
 	engine    *TimerEngine
-	cb        Callback
+	cb        TimerCallback
 	Timestamp int64       // 时间戳
+	Async     bool        // 是否需要异步执行,默认false，需要Post到Executor中执行
 	Delay     int         // 不为零，表示是Delay模式
 	Count     int         // 触发次数
 	Tag       int         // 自定义Tag
@@ -23,7 +26,7 @@ func (self *Timer) SetEngine(e *TimerEngine) {
 	self.engine = e
 }
 
-func (self *Timer) SetCallback(cb Callback) {
+func (self *Timer) SetCallback(cb TimerCallback) {
 	self.cb = cb
 }
 
@@ -60,9 +63,8 @@ func (self *Timer) Restart(timestamp int64) {
 func (self *Timer) Start() {
 	if !self.IsRunning() {
 		if self.engine == nil {
-			self.engine = GetEngine()
+			self.engine = GetTimerEngine()
 		}
-		// check engine running??
 		self.engine.AddTimer(self)
 	}
 }
@@ -74,13 +76,11 @@ func (self *Timer) Stop() {
 }
 
 func (self *Timer) IsRunning() bool {
-	return self.prev != nil
+	return self.elem != nil
 }
 
-/*
-Create Timer Func
-*/
-func NewTimer(timestamp int64, cb Callback) *Timer {
+//当timestamp小于TIMER_DELAY_MAX时，代表延迟时间
+func NewTimer(timestamp int64, cb TimerCallback) *Timer {
 	delay := 0
 	if timestamp < TIMER_DELAY_MAX {
 		delay = int(timestamp)
@@ -94,8 +94,9 @@ func NewTimer(timestamp int64, cb Callback) *Timer {
 	return t
 }
 
-func StartTimer(timestamp int64, cb Callback) *Timer {
-	t := New(timestamp, false, cb)
+// 快速创建并启动
+func StartTimer(timestamp int64, cb TimerCallback) *Timer {
+	t := NewTimer(timestamp, cb)
 	t.Start()
 	return t
 }
