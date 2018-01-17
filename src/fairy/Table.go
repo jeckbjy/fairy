@@ -11,14 +11,23 @@ import (
 )
 
 /*
-// type name desc
-type Foo struct {
+usage:
+type Address struct {
 	Id   int
 	Name string
+	Desc string
 }
 
-var gFooArray []*Foo
-var gFooMap map[id]*Foo
+var gAddressVec []*Address
+var gAddressMap map[int]*Address
+func GetAddressVec() []*Address {
+	return gAddressVec
+}
+
+func GetAddressById(id int) *Address {
+	return gAddressMap[id]
+}
+// ReadTable("tables/address.txt", gAddressVec, gAddressMap)
 */
 
 const TABLE_HEAD_LEN_MAX = 3
@@ -155,10 +164,5 @@ func ReadTable(path string, meta interface{}) (interface{}, error) {
 	}
 
 	reader := csv.NewReader(file)
-	return ParseTable(reader, meta)
-}
-
-func ReadTableFromString(str string, meta interface{}) (interface{}, error) {
-	reader := csv.NewReader(strings.NewReader(str))
 	return ParseTable(reader, meta)
 }

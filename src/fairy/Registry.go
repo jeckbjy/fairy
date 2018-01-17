@@ -23,6 +23,14 @@ func NewRegistry() *Registry {
 	return registry
 }
 
+func RegisterMsgByName(msg interface{}) {
+	GetRegistry().Register(msg)
+}
+
+func RegisterMsgById(msg interface{}, msgId uint) {
+	GetRegistry().RegisterId(msg, msgId)
+}
+
 // 消息元信息
 type MsgInfo struct {
 	Id   uint

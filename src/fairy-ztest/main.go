@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fairy"
 	"fmt"
 )
 
@@ -33,11 +32,11 @@ func test() {
 	// fmt.Printf("aaa:%+v,%+v\n", tokens, len(tokens))
 	// fmt.Printf("aaaa\n")
 
-	str := "INT,STRING,STRING\nId,Name,Desc\n,,\n1,Jack,Hello"
-	result := []*Student{}
-	records, _ := fairy.ReadTableFromString(str, &result)
-	aa := records.([]*Student)
-	fmt.Printf("%+v", aa)
+	// str := "INT,STRING,STRING\nId,Name,Desc\n,,\n1,Jack,Hello"
+	// result := []*Student{}
+	// records, _ := fairy.ReadTableFromString(str, &result)
+	// aa := records.([]*Student)
+	// fmt.Printf("%+v", aa)
 }
 
 func main() {
