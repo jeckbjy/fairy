@@ -27,12 +27,19 @@ func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 	msg := ctx.GetMessage()
 	conn := ctx.GetConnection()
 	if packet, ok := msg.(fairy.Packet); ok {
-		if invoker := self.GetHandler(packet.GetId(), packet.GetName()); invoker != nil {
+		handler := self.GetHandler(packet.GetId(), packet.GetName())
+		if handler == nil {
+			handler = self.GetUncaughtHandler()
+		}
+
+		if handler != nil {
 			if self.Executor != nil {
-				self.DispatchEx(fairy.NewPacketEvent(conn, packet, invoker), invoker.GetQueueId())
+				self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
 			} else {
-				invoker.Invoke(conn, packet)
+				handler.Invoke(conn, packet)
 			}
+		} else {
+			fairy.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
 		}
 	}
 	return ctx.GetNextAction()

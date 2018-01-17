@@ -21,17 +21,23 @@ func NewDispatcher() *Dispatcher {
 	return dispatcher
 }
 
-// 注册回调函数,AddHandler??
+//////////////////////////////////////////////////////////
+// 注册回调函数
+//////////////////////////////////////////////////////////
 func RegisterHandler(key interface{}, cb HandlerCallback) {
 	RegisterHandlerEx(key, cb, 0)
 }
 
 func RegisterHandlerEx(key interface{}, cb HandlerCallback, queueId int) {
-	GetDispatcher().Regsiter(key, &HandlerHolder{queueId: queueId, cb: cb})
+	GetDispatcher().Regsiter(key, &HandlerHolder{cb: cb, queueId: queueId})
+}
+
+func RegisterUncaughtHandler(cb HandlerCallback) {
+	GetDispatcher().SetUncaughtHandler(&HandlerHolder{cb: cb, queueId: 0})
 }
 
 //////////////////////////////////////////////////////////
-// Invoker
+// Handler
 //////////////////////////////////////////////////////////
 type Handler interface {
 	GetQueueId() int // 暗示在哪个线程执行
@@ -40,8 +46,8 @@ type Handler interface {
 
 type HandlerCallback func(Connection, Packet)
 type HandlerHolder struct {
-	queueId int
 	cb      HandlerCallback
+	queueId int
 }
 
 func (self *HandlerHolder) GetQueueId() int {
@@ -64,9 +70,10 @@ const (
 )
 
 type Dispatcher struct {
-	nameMap HandlerNameMap
-	idMap   HandlerIdMap
-	idArray []Handler
+	nameMap  HandlerNameMap
+	idMap    HandlerIdMap
+	idArray  []Handler
+	uncaught Handler
 }
 
 func (self *Dispatcher) Regsiter(key interface{}, handler Handler) {
@@ -139,4 +146,12 @@ func (self *Dispatcher) GetHandlerById(id uint) Handler {
 
 func (self *Dispatcher) GetHandlerByName(name string) Handler {
 	return self.nameMap[name]
+}
+
+func (self *Dispatcher) SetUncaughtHandler(handler Handler) {
+	self.uncaught = handler
+}
+
+func (self *Dispatcher) GetUncaughtHandler() Handler {
+	return self.uncaught
 }
