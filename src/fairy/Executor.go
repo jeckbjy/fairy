@@ -27,7 +27,6 @@ func NewExecutor() *Executor {
 2:主业务线程+多个子模块线程，消息分发到特定的线程上
 二:线程池
 启动一个goroutine，回调回来时要求在主线程执行一个回调
-三:定时器触发时机
 */
 const EVENT_QUEUE_MAIN = 0
 
@@ -63,10 +62,14 @@ func (self *Executor) DispatchEx(ev Event, queueId int) {
 }
 
 func (self *Executor) Go(goCB Callback, mainCB Callback) {
-	go func() {
-		goCB()
-		self.Dispatch(NewFuncEvent(mainCB))
-	}()
+	if mainCB != nil {
+		go func() {
+			goCB()
+			self.Dispatch(NewFuncEvent(mainCB))
+		}()
+	} else {
+		go goCB()
+	}
 }
 
 func (self *Executor) GetQueue(queueId int) *EventQueue {

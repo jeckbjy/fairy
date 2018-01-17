@@ -2,6 +2,7 @@ package fairy
 
 import (
 	"fmt"
+	"reflect"
 )
 
 var gDispatcher *Dispatcher
@@ -85,7 +86,13 @@ func (self *Dispatcher) Regsiter(key interface{}, handler Handler) {
 	case uint:
 		self.RegistryById(key.(uint), handler)
 	default:
-		panic(fmt.Sprintf("register invoker fail,bad key type!key=%+v", key))
+		// get name
+		rtype := reflect.TypeOf(key)
+		if rtype.Elem().Kind() == reflect.Struct {
+			self.RegisterByName(rtype.Elem().Name(), handler)
+		} else {
+			panic(fmt.Sprintf("register handler fail,bad key type!key=%+v", key))
+		}
 	}
 }
 

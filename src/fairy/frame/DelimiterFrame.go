@@ -36,7 +36,6 @@ func (self *DelimiterFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) 
 	}
 
 	result := fairy.NewBuffer()
-
 	// seek data, if pos == 0 ??
 	buffer.Seek(pos, io.SeekCurrent)
 	buffer.Split(result)

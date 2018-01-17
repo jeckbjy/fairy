@@ -23,11 +23,11 @@ func NewRegistry() *Registry {
 	return registry
 }
 
-func RegisterMsgByName(msg interface{}) {
+func RegisterMessage(msg interface{}) {
 	GetRegistry().Register(msg)
 }
 
-func RegisterMsgById(msg interface{}, msgId uint) {
+func RegisterMessageEx(msg interface{}, msgId uint) {
 	GetRegistry().RegisterId(msg, msgId)
 }
 
@@ -51,7 +51,7 @@ type Registry struct {
 
 func (self *Registry) Register(msg interface{}) error {
 	msgType := reflect.TypeOf(msg)
-	msgName := msgType.Name()
+	msgName := msgType.Elem().Name()
 	if _, ok := self.typeMap[msgType]; ok {
 		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgType.Name())
 	}
@@ -70,7 +70,7 @@ func (self *Registry) Register(msg interface{}) error {
 
 func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
 	msgType := reflect.TypeOf(msg)
-	msgName := msgType.Name()
+	msgName := msgType.Elem().Name()
 
 	if msgId <= 0 {
 		return fmt.Errorf("msgid must be greator than zero")

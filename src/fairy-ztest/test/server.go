@@ -10,6 +10,15 @@ import (
 	"fmt"
 )
 
+type LoginReq struct {
+	Account  string
+	Password string
+}
+
+type LoginRsp struct {
+	Error int
+}
+
 func OnLogin(conn fairy.Connection, packet fairy.Packet) {
 	msg := packet.GetMessage().(string)
 	fmt.Println(msg)
@@ -25,7 +34,9 @@ func StartServer() {
 	// 定时器
 	fairy.StartTimer(10, OnTimeout)
 	// register
-	fairy.RegisterHandler(1, OnLogin)
+	fairy.RegisterMessage(&LoginReq{})
+	fairy.RegisterMessage(&LoginRsp{})
+	fairy.RegisterHandler(&LoginReq{}, OnLogin)
 
 	transport := tcp.NewTransport()
 	transport.AddFilters(

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fairy"
 	"fairy/util"
+	"io"
 	"math"
 )
 
@@ -82,6 +83,7 @@ func (self *FixedLengthFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error
 
 	// discard length
 	buffer.Discard()
+	buffer.Seek(int(count), io.SeekStart)
 	buffer.Split(result)
 	return result, nil
 }
