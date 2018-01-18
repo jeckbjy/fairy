@@ -1,9 +1,5 @@
 package log
 
-import (
-	"time"
-)
-
 const (
 	LEVEL_ALL = iota
 	LEVEL_TRACE
@@ -17,10 +13,9 @@ const (
 )
 
 type Message struct {
-	Level int
-	Info string
-	Pid int
-	File string
-	Line int
-	Timetamp time.Time
+	Level    int
+	Info     string
+	File     string
+	Line     int
+	Timetamp int64
 }

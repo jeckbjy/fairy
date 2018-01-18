@@ -1,6 +1,7 @@
 package fairy
 
 import (
+	"fairy/util"
 	"fmt"
 	"reflect"
 )
@@ -86,10 +87,11 @@ func (self *Dispatcher) Regsiter(key interface{}, handler Handler) {
 	case uint:
 		self.RegistryById(key.(uint), handler)
 	default:
-		// get name
-		rtype := reflect.TypeOf(key)
-		if rtype.Elem().Kind() == reflect.Struct {
-			self.RegisterByName(rtype.Elem().Name(), handler)
+		// must be struct!!!
+		// example:Register(&LoginReq{}, handler) or Register(LoginReq{}, handler)
+		rtype := util.GetRealType(key)
+		if rtype.Kind() == reflect.Struct {
+			self.RegisterByName(rtype.Name(), handler)
 		} else {
 			panic(fmt.Sprintf("register handler fail,bad key type!key=%+v", key))
 		}

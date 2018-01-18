@@ -6,10 +6,6 @@ import (
 	"io"
 )
 
-func NewLineFrame() fairy.Frame {
-	return NewDelimiterFrame("\n")
-}
-
 func NewDelimiterFrame(delimiter string) fairy.Frame {
 	frame := &DelimiterFrame{}
 	frame.delimiter = delimiter
@@ -24,7 +20,6 @@ type DelimiterFrame struct {
 }
 
 func (self *DelimiterFrame) Encode(buffer *fairy.Buffer) error {
-	// change to write??
 	buffer.Append([]byte(self.delimiter))
 	return nil
 }
@@ -36,12 +31,12 @@ func (self *DelimiterFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) 
 	}
 
 	result := fairy.NewBuffer()
-	// seek data, if pos == 0 ??
-	buffer.Seek(pos, io.SeekCurrent)
+	// read data
+	buffer.Seek(pos, io.SeekStart)
 	buffer.Split(result)
 
-	// seek delimiter
-	buffer.Seek(len(self.delimiter), io.SeekCurrent)
+	// remove delimiter
+	buffer.Seek(len(self.delimiter), io.SeekStart)
 	buffer.Discard()
 
 	return result, nil

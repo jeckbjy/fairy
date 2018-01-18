@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"container/list"
 	"errors"
-	"fairy/util"
 	"fmt"
 	"io"
 	"math"
@@ -267,29 +266,50 @@ func (self *Buffer) IndexOf(key interface{}) int {
 
 // 从当前位置查找key,最长搜索limit个字节(-1无限制)
 func (self *Buffer) IndexOfLimit(key interface{}, limit int) int {
+	self.checkCursor()
 	switch key.(type) {
 	case byte:
 		ch := key.(byte)
 		return self.findByte(ch, limit)
-	case []byte:
-	case string:
-		var data []byte
+	case []byte, string:
+		var pattern []byte
 		if str, ok := key.(string); ok {
-			data = []byte(str)
+			pattern = []byte(str)
 		} else {
-			data = key.([]byte)
-		}
-		if len(data) == 0 {
-			panic("buffer IndexOf no data!")
+			pattern = key.([]byte)
 		}
 
-		if len(data) == 1 {
-			return self.findByte(data[0], limit)
+		if len(pattern) == 0 {
+			return -1
+		}
+
+		if len(pattern) == 1 {
+			return self.findByte(pattern[0], limit)
 		} else {
-			iter := Iterator{}
-			iter.Create(self.element, self.offset, limit)
-			for iter.Next() {
-				// find??
+			if limit == -1 {
+				limit = math.MaxInt32
+			}
+
+			count := 0
+			offset := self.offset
+			for iter := self.element; iter != nil; iter = iter.Next() {
+				data := iter.Value.([]byte)
+				for i := offset; i < len(data); i++ {
+					if count > limit {
+						break
+					}
+					if self.match(iter, i, pattern) {
+						return self.position + count + i
+					}
+
+					count++
+				}
+
+				if count > limit {
+					break
+				}
+
+				offset = 0
 			}
 		}
 	default:
@@ -304,11 +324,23 @@ func (self *Buffer) findByte(ch byte, limit int) int {
 	iter.Create(self.element, self.offset, limit)
 	for iter.Next() {
 		if pos := bytes.IndexByte(iter.data, ch); pos != -1 {
-			return self.position + iter.readNum + pos
+			return self.position + iter.readNum - len(iter.data) + pos
 		}
 	}
 
 	return -1
+}
+
+func (self *Buffer) match(elem *list.Element, offset int, pattern []byte) bool {
+	iter := Iterator{}
+	iter.Create(self.element, offset, len(pattern))
+	for iter.Next() {
+		if bytes.Compare(iter.data, pattern) < 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (self *Buffer) Read(buffer []byte) (int, error) {
@@ -338,29 +370,30 @@ func (self *Buffer) Write(bufffer []byte) (int, error) {
 	length := len(bufffer)
 	count := self.position + length - self.length
 	if count > 0 {
+		return 0, errors.New("Buffer.write overflow!")
 		// resize
-		self.length += count
-		if self.element != nil {
-			data := self.element.Value.([]byte)
-			remain := cap(data) - len(data)
-			var canUse int
-			if remain >= count {
-				canUse = count
-			} else {
-				canUse = remain
-			}
+		// self.length += count
+		// if self.element != nil {
+		// 	data := self.element.Value.([]byte)
+		// 	remain := cap(data) - len(data)
+		// 	var canUse int
+		// 	if remain >= count {
+		// 		canUse = count
+		// 	} else {
+		// 		canUse = remain
+		// 	}
 
-			data = append(data, make([]byte, canUse, canUse)...)
-			self.element.Value = data
-			count -= canUse
-		}
+		// 	data = append(data, make([]byte, canUse, canUse)...)
+		// 	self.element.Value = data
+		// 	count -= canUse
+		// }
 
-		if count > 0 {
-			// create new
-			newSize := util.MaxInt(count, 1024)
-			data := make([]byte, count, newSize)
-			self.datas.PushBack(data)
-		}
+		// if count > 0 {
+		// 	// create new
+		// 	newSize := util.MaxInt(count, 1024)
+		// 	data := make([]byte, count, newSize)
+		// 	self.datas.PushBack(data)
+		// }
 	}
 
 	iter := Iterator{}
@@ -395,6 +428,7 @@ func (self *Buffer) ToBytes() []byte {
 	return self.datas.Front().Value.([]byte)
 }
 
+// for io.ByteReader
 func (self *Buffer) ReadByte() (byte, error) {
 	if self.position >= self.length {
 		return 0, errors.New("ReadByte overflow!")

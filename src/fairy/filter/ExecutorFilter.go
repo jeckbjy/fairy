@@ -26,21 +26,33 @@ type ExecutorFilter struct {
 func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	msg := ctx.GetMessage()
 	conn := ctx.GetConnection()
-	if packet, ok := msg.(fairy.Packet); ok {
-		handler := self.GetHandler(packet.GetId(), packet.GetName())
-		if handler == nil {
-			handler = self.GetUncaughtHandler()
-		}
-
-		if handler != nil {
-			if self.Executor != nil {
-				self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
-			} else {
-				handler.Invoke(conn, packet)
-			}
-		} else {
-			fairy.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
-		}
+	packet, ok := msg.(fairy.Packet)
+	if !ok {
+		return ctx.GetNextAction()
 	}
+
+	// check rpc
+	if packet.GetSerialId() > 0 {
+
+	}
+
+	// check handler
+	handler := self.GetHandler(packet.GetId(), packet.GetName())
+	if handler == nil {
+		handler = self.GetUncaughtHandler()
+	}
+
+	if handler == nil {
+		// TODO:throw error
+		fairy.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
+		return ctx.GetStopAction()
+	}
+
+	if self.Executor != nil {
+		self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
+	} else {
+		handler.Invoke(conn, packet)
+	}
+
 	return ctx.GetNextAction()
 }

@@ -1,7 +1,7 @@
 package fairy
 
 import (
-	"container/list"
+	"fairy/container/inlist"
 	"fairy/util"
 	"sync"
 	"time"
@@ -24,13 +24,13 @@ func NewTimerEngine() *TimerEngine {
 }
 
 type Wheel struct {
-	slots   []*list.List
+	slots   []*inlist.List
 	index   int
 	offset  uint
 	timeMax int64
 }
 
-func (self *Wheel) Current() *list.List {
+func (self *Wheel) Current() *inlist.List {
 	return self.slots[self.index]
 }
 
@@ -51,7 +51,7 @@ type TimerEngine struct {
 	count     int
 	wheels    []*Wheel
 	executor  *Executor
-	pendings  *list.List
+	pendings  *inlist.List
 	mutex     sync.Mutex
 	stopped   bool
 }
@@ -97,7 +97,7 @@ func (self *TimerEngine) Update() {
 }
 
 func (self *TimerEngine) Tick(now int64) {
-	pendings := list.List{}
+	pendings := inlist.List{}
 	if now < self.timestamp {
 		// reset all timer
 		// timers := &List{}
@@ -113,9 +113,11 @@ func (self *TimerEngine) Tick(now int64) {
 			wheel := self.wheels[0]
 			// process timer list
 			timers := wheel.Current()
-			for iter := timers.Front(); iter != nil; iter = iter.Next() {
-				timer := iter.Value.(*Timer)
-				timer.elem = nil
+			for iter := timers.Front(); iter != nil; {
+				timer := iter.(*Timer)
+				iter = inlist.Next(iter)
+				timers.Remove(timer)
+
 				if self.executor == nil || timer.Async {
 					timer.Invoke()
 				} else {
@@ -139,7 +141,7 @@ func (self *TimerEngine) Tick(now int64) {
 	// pendings for executor invoke
 	if pendings.Len() > 0 {
 		self.mutex.Lock()
-		self.pendings.PushBackList(&pendings)
+		self.pendings.MoveBackList(&pendings)
 		self.executor.Dispatch(NewTimerEvent(self))
 		self.mutex.Unlock()
 	}
@@ -147,16 +149,15 @@ func (self *TimerEngine) Tick(now int64) {
 
 func (self *TimerEngine) Invoke() {
 	// invoke all pending timers
-	pendings := list.List{}
+	pendings := inlist.List{}
 	self.mutex.Lock()
 	pendings = *self.pendings
 	self.pendings.Init()
 	self.mutex.Unlock()
 
 	// invoke
-	for iter := pendings.Front(); iter != nil; iter = iter.Next() {
-		timer := iter.Value.(*Timer)
-		timer.elem = nil
+	for iter := pendings.Front(); iter != nil; inlist.Next(iter) {
+		timer := iter.(*Timer)
 		timer.Invoke()
 	}
 }

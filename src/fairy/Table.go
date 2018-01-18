@@ -13,13 +13,14 @@ import (
 /*
 usage:
 type Address struct {
-	Id   int
+	Id   int  `id:"id"`
 	Name string
 	Desc string
 }
 
 var gAddressVec []*Address
 var gAddressMap map[int]*Address
+
 func GetAddressVec() []*Address {
 	return gAddressVec
 }
@@ -27,7 +28,13 @@ func GetAddressVec() []*Address {
 func GetAddressById(id int) *Address {
 	return gAddressMap[id]
 }
-// ReadTable("tables/address.txt", gAddressVec, gAddressMap)
+
+func LoadAddress(path string) {
+	gAddressVec = ReadTable(path, Address{}).([]*Address)
+	for _, record := range gAddressVec {
+		gAddressMap[record.Id] = record
+	}
+}
 */
 
 const TABLE_HEAD_LEN_MAX = 3
@@ -98,7 +105,9 @@ func ParseTable(reader *csv.Reader, meta interface{}) (interface{}, error) {
 		return nil, nil
 	}
 
-	rtype := reflect.TypeOf(meta)
+	rtype := util.GetRealType(meta)
+	ptype := reflect.PtrTo(rtype)
+
 	// fileds reflect map
 	fieldsMap := make(map[string]int)
 	for i := 0; i < rtype.NumField(); i++ {
@@ -126,43 +135,56 @@ func ParseTable(reader *csv.Reader, meta interface{}) (interface{}, error) {
 	}
 
 	// 读取数据
-	recordType := reflect.SliceOf(reflect.PtrTo(rtype))
-	recordArray := reflect.MakeSlice(recordType, 0, len(lines)-3)
+	recordList := reflect.MakeSlice(reflect.SliceOf(ptype), 0, len(lines)-3)
 
+	// foreach lines
 	for i := 3; i < len(lines); i++ {
 		line := lines[i]
 		record := reflect.New(rtype)
 
-		// fill record
-		col := colNum
-		if col < len(line) {
-			col = len(line)
-		}
-
+		col := util.MinInt(len(line), colNum)
+		// foreach column
 		for j := 0; j < col; j++ {
-			if heads[j].field == -1 {
+			fieldIndex := heads[j].field
+			if fieldIndex == -1 {
 				continue
 			}
 			// create field
-			field := record.Elem().Field(heads[j].field)
+			field := record.Elem().Field(fieldIndex)
 			err := setField(&field, line[j])
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		reflect.Append(recordArray, record)
+		recordList = reflect.Append(recordList, record)
 	}
 
-	return reflect.ValueOf(recordArray).Interface(), nil
+	return recordList.Interface(), nil
 }
 
-func ReadTable(path string, meta interface{}) (interface{}, error) {
+func ReadTable(path string, meta interface{}) interface{} {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, nil
+		panic(err)
 	}
 
 	reader := csv.NewReader(file)
-	return ParseTable(reader, meta)
+	record, err := ParseTable(reader, meta)
+	if err != nil {
+		panic(err)
+	}
+
+	return record
+}
+
+func ReadTableFromString(data string, meta interface{}) interface{} {
+	strReader := strings.NewReader(data)
+	reader := csv.NewReader(strReader)
+	record, err := ParseTable(reader, meta)
+	if err != nil {
+		panic(err)
+	}
+
+	return record
 }

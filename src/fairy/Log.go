@@ -3,7 +3,9 @@ package fairy
 import "fairy/log"
 
 func GetLogger() *log.Logger {
-	return log.GetLogger()
+	logger := log.GetLogger()
+	logger.SetCallerSkip(2)
+	return logger
 }
 
 func Trace(format string, args ...interface{}) {

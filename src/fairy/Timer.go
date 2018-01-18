@@ -1,7 +1,7 @@
 package fairy
 
 import (
-	"container/list"
+	"fairy/container/inlist"
 	"fairy/util"
 )
 
@@ -10,7 +10,7 @@ const TIMER_DELAY_MAX = 30 * 24 * 3600 * 1000
 type TimerCallback func(*Timer)
 
 type Timer struct {
-	elem      *list.Element
+	inlist.Hook
 	engine    *TimerEngine
 	cb        TimerCallback
 	Timestamp int64       // 时间戳
@@ -76,7 +76,7 @@ func (self *Timer) Stop() {
 }
 
 func (self *Timer) IsRunning() bool {
-	return self.elem != nil
+	return self.List() != nil
 }
 
 //当timestamp小于TIMER_DELAY_MAX时，代表延迟时间

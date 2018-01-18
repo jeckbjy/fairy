@@ -83,6 +83,7 @@ func (self *FixedLengthFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error
 
 	// discard length
 	buffer.Discard()
+	// read data
 	buffer.Seek(int(count), io.SeekStart)
 	buffer.Split(result)
 	return result, nil

@@ -2,7 +2,15 @@ package log
 
 type BaseChannel struct {
 	enable bool
-	level int
+	level  int
+}
+
+func (self *BaseChannel) Open() {
+
+}
+
+func (self *BaseChannel) Close() {
+
 }
 
 func (self *BaseChannel) SetEnable(enable bool) {

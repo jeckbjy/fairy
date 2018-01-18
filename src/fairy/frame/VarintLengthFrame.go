@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fairy"
+	"io"
 )
 
 func NewVarintLengthFrame() *VarintLengthFrame {
@@ -35,7 +36,10 @@ func (self *VarintLengthFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, erro
 
 	result := fairy.NewBuffer()
 
+	// remove length head
 	buffer.Discard()
+	// read data
+	buffer.Seek(int(size), io.SeekStart)
 	buffer.Split(result)
 	return result, nil
 }

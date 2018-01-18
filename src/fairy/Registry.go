@@ -1,6 +1,7 @@
 package fairy
 
 import (
+	"fairy/util"
 	"fmt"
 	"reflect"
 )
@@ -50,8 +51,8 @@ type Registry struct {
 }
 
 func (self *Registry) Register(msg interface{}) error {
-	msgType := reflect.TypeOf(msg)
-	msgName := msgType.Elem().Name()
+	msgType := util.GetRealType(msg)
+	msgName := msgType.Name()
 	if _, ok := self.typeMap[msgType]; ok {
 		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgType.Name())
 	}
@@ -69,8 +70,8 @@ func (self *Registry) Register(msg interface{}) error {
 }
 
 func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
-	msgType := reflect.TypeOf(msg)
-	msgName := msgType.Elem().Name()
+	msgType := util.GetRealType(msg)
+	msgName := msgType.Name()
 
 	if msgId <= 0 {
 		return fmt.Errorf("msgid must be greator than zero")
@@ -97,7 +98,7 @@ func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
 }
 
 func (self *Registry) Remove(msg interface{}) bool {
-	msgType := reflect.TypeOf(msg)
+	msgType := util.GetRealType(msg)
 	info, ok := self.typeMap[msgType]
 	if ok {
 		delete(self.typeMap, msgType)
@@ -113,7 +114,7 @@ func (self *Registry) Remove(msg interface{}) bool {
 }
 
 func (self *Registry) GetName(msg interface{}) string {
-	msgType := reflect.TypeOf(msg)
+	msgType := util.GetRealType(msg)
 	info, ok := self.typeMap[msgType]
 	if ok {
 		return info.Name
@@ -123,7 +124,7 @@ func (self *Registry) GetName(msg interface{}) string {
 }
 
 func (self *Registry) GetId(msg interface{}) uint {
-	msgType := reflect.TypeOf(msg)
+	msgType := util.GetRealType(msg)
 	info, ok := self.typeMap[msgType]
 	if ok {
 		return info.Id
