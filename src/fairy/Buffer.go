@@ -260,60 +260,48 @@ func (self *Buffer) Rewind() {
 	self.offset = 0
 }
 
-func (self *Buffer) IndexOf(key interface{}) int {
+func (self *Buffer) IndexOf(key string) int {
 	return self.IndexOfLimit(key, -1)
 }
 
 // 从当前位置查找key,最长搜索limit个字节(-1无限制)
-func (self *Buffer) IndexOfLimit(key interface{}, limit int) int {
+func (self *Buffer) IndexOfLimit(key string, limit int) int {
 	self.checkCursor()
-	switch key.(type) {
-	case byte:
-		ch := key.(byte)
-		return self.findByte(ch, limit)
-	case []byte, string:
-		var pattern []byte
-		if str, ok := key.(string); ok {
-			pattern = []byte(str)
-		} else {
-			pattern = key.([]byte)
-		}
+	n := len(key)
+	switch {
+	case n == 0:
+		return -1
+	case n > self.length-self.position:
+		return -1
+	case n == 1:
+		return self.findByte(key[0], limit)
+	}
 
-		if len(pattern) == 0 {
-			return -1
-		}
+	// default:
+	if limit == -1 {
+		limit = math.MaxInt32
+	}
 
-		if len(pattern) == 1 {
-			return self.findByte(pattern[0], limit)
-		} else {
-			if limit == -1 {
-				limit = math.MaxInt32
+	count := 0
+	offset := self.offset
+	for iter := self.element; iter != nil; iter = iter.Next() {
+		data := iter.Value.([]byte)
+		for i := offset; i < len(data); i++ {
+			if count > limit {
+				break
+			}
+			if self.match(iter, i, key) {
+				return self.position + count + i
 			}
 
-			count := 0
-			offset := self.offset
-			for iter := self.element; iter != nil; iter = iter.Next() {
-				data := iter.Value.([]byte)
-				for i := offset; i < len(data); i++ {
-					if count > limit {
-						break
-					}
-					if self.match(iter, i, pattern) {
-						return self.position + count + i
-					}
-
-					count++
-				}
-
-				if count > limit {
-					break
-				}
-
-				offset = 0
-			}
+			count++
 		}
-	default:
-		panic("buffer IndexOf bad type!")
+
+		if count > limit {
+			break
+		}
+
+		offset = 0
 	}
 
 	return -1
@@ -331,7 +319,8 @@ func (self *Buffer) findByte(ch byte, limit int) int {
 	return -1
 }
 
-func (self *Buffer) match(elem *list.Element, offset int, pattern []byte) bool {
+func (self *Buffer) match(elem *list.Element, offset int, key string) bool {
+	pattern := []byte(key)
 	iter := Iterator{}
 	iter.Create(self.element, offset, len(pattern))
 	for iter.Next() {
@@ -383,7 +372,7 @@ func (self *Buffer) Write(bufffer []byte) (int, error) {
 		// 		canUse = remain
 		// 	}
 
-		// 	data = append(data, make([]byte, canUse, canUse)...)
+		//  data = data[:len(data)+canUse]
 		// 	self.element.Value = data
 		// 	count -= canUse
 		// }

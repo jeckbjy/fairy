@@ -1,8 +1,8 @@
 package log
 
 const (
-	LEVEL_ALL = iota
-	LEVEL_TRACE
+	LEVEL_ALL   = -1
+	LEVEL_TRACE = iota
 	LEVEL_DEBUG
 	LEVEL_INFO
 	LEVEL_WARN
@@ -12,10 +12,14 @@ const (
 	LEVEL_MAX
 )
 
+var gLevelName = []string{"Trace", "Debug", "Info", "Warn", "Error", "Fatal"}
+
 type Message struct {
 	Level    int
-	Info     string
 	File     string
+	FileName string
 	Line     int
 	Timetamp int64
+	Text     string
+	Output   string
 }

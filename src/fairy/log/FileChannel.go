@@ -20,10 +20,6 @@ func (self *FileChannel) Name() string {
 }
 
 func (self *FileChannel) Write(msg *Message) {
-	//
-	if self.CanWrite(msg.Level) {
-		//
-	}
 }
 
 func (self *FileChannel) Open() {

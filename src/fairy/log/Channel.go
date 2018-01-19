@@ -5,7 +5,6 @@ type Channel interface {
 	Open()
 	Close()
 	Write(msg *Message)
-	SetProperty(key string, val interface{})
-	SetEnable(enable bool)
-	GetEnable() bool
+	SetProperty(key string, val interface{}) bool
+	GetConfig() *Config
 }

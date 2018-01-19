@@ -3,7 +3,6 @@ package main
 import (
 	// "fairy"
 	"fairy"
-	"fairy/log"
 	"fmt"
 )
 
@@ -45,7 +44,9 @@ func TestTable() {
 }
 
 func TestLog() {
-	log.GetLogger().Write(log.LEVEL_DEBUG, "%v", 1)
+	// aa := fmt.Sprintf("%02d", 20)
+	// fmt.Println(aa)
+	// log.GetLogger().Write(log.LEVEL_DEBUG, "%v", 1)
 	fairy.Debug("%+v", 1)
 }
 

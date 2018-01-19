@@ -2,6 +2,7 @@ package fairy
 
 import (
 	"container/list"
+	"fairy/util"
 	"sync"
 )
 
@@ -38,8 +39,7 @@ func (self *EventQueue) loop(wg *sync.WaitGroup) {
 		for !self.stopped && self.events.Len() == 0 {
 			self.cond.Wait()
 		}
-		events = *self.events
-		self.events.Init()
+		util.SwapList(&events, self.events)
 		self.mutex.Unlock()
 		// process all events
 		for iter := events.Front(); iter != nil; iter = iter.Next() {

@@ -1,5 +1,9 @@
 package util
 
-// func NewError(format string, args ...interface{}) error {
-// 	return errors.New(fmt.Sprintf(format, args))
-// }
+import "container/list"
+
+func SwapList(a *list.List, b *list.List) {
+	c := *a
+	*a = *b
+	*b = c
+}
