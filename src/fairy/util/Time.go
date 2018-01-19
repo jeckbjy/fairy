@@ -3,7 +3,7 @@ package util
 import "time"
 
 func Now() int64 {
-	return time.Now().UnixNano() * int64(time.Microsecond)
+	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
 func GetTimeByMsec(timestamp int64) time.Time {

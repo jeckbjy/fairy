@@ -44,10 +44,7 @@ func TestTable() {
 }
 
 func TestLog() {
-	// aa := fmt.Sprintf("%02d", 20)
-	// fmt.Println(aa)
-	// log.GetLogger().Write(log.LEVEL_DEBUG, "%v", 1)
-	fairy.Debug("%+v", 1)
+	fairy.Debug("%+v", "HelloWord!")
 }
 
 func main() {

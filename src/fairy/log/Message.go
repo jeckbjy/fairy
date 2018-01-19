@@ -1,7 +1,6 @@
 package log
 
 const (
-	LEVEL_ALL   = -1
 	LEVEL_TRACE = iota
 	LEVEL_DEBUG
 	LEVEL_INFO
@@ -10,6 +9,7 @@ const (
 	LEVEL_FATAL
 	LEVEL_OFF
 	LEVEL_MAX
+	LEVEL_ALL   = -1		
 )
 
 var gLevelName = []string{"Trace", "Debug", "Info", "Warn", "Error", "Fatal"}

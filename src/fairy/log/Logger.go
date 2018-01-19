@@ -117,13 +117,13 @@ func (self *Logger) Write(level int, format string, args ...interface{}) {
 	msg.Timetamp = util.Now()
 	msg.FileName = fileName
 
-	tt := self.pattern.Format(msg)
-	fmt.Printf("aaaa :%s", tt)
+	// tt := self.pattern.Format(msg)
+	// fmt.Printf("%s", tt)
 
-	// self.mutex.Lock()
-	// self.messages.PushBack(msg)
-	// self.cond.Signal()
-	// self.mutex.Unlock()
+	self.mutex.Lock()
+	self.messages.PushBack(msg)
+	self.cond.Signal()
+	self.mutex.Unlock()
 }
 
 func (self *Logger) Run() {

@@ -72,8 +72,8 @@ func ParseLayout(str string) int {
 
 func ParseLevel(str string) int {
 	switch strings.ToLower(str) {
-	case "all":
-		return LEVEL_ALL
+	// case "all":
+	// 	return LEVEL_ALL
 	case "trace":
 		return LEVEL_TRACE
 	case "debug":

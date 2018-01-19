@@ -56,33 +56,25 @@ import (
 ///   * %[name] - the value of the message parameter with the given name
 ///   * %% - percent sign
 
-const DEFAULT_PATTERN = "%y-%m-%d %H:%M:%S [%q] %U:%u %t"
+const DEFAULT_PATTERN = "[%y-%m-%d %H:%M:%S][%q][%U:%u][%t]"
 
 func NewPattern() *Pattern {
 	p := &Pattern{}
 	return p
 }
 
-type Action struct {
-	key      byte
-	length   int    // %v[width]
-	prepend  string // xxx%
-	property string // %[name]
-}
-
 type Pattern struct {
-	actions []*Action
+	actions util.PatternActionArray
 }
 
 func (self *Pattern) Format(msg *Message) string {
+	// fmt.Printf("%+v, %+v\n", msg.Level, LEVEL_ALL)
 	builder := bytes.Buffer{}
 	ts := util.GetTimeByMsec(msg.Timetamp)
 	// simple mode
 	for _, action := range self.actions {
-		if len(action.prepend) > 0 {
-			builder.WriteString(action.prepend)
-		}
-		switch action.key {
+		builder.WriteString(action.Prepend)
+		switch action.Key {
 		case 's': // TODO:source
 		case 't':
 			builder.WriteString(msg.Text)
@@ -157,72 +149,17 @@ func (self *Pattern) Format(msg *Message) string {
 		case 'v': // source width
 		case 'x': // property
 		case 'L':
+		case '%':
+			builder.WriteByte('%')
+		case '[':
+			builder.WriteByte('[')
 		}
 	}
+	builder.WriteByte('\n')
 	return builder.String()
 }
 
+// 通用解析规则%?[prop]
 func (self *Pattern) Parse(format string) {
-	self.actions = []*Action{}
-	end := len(format)
-	cur := 0
-	last := 0
-	for cur < end {
-		if format[cur] == '%' {
-			cur++
-			if cur == end {
-				break
-			}
-			act := &Action{}
-			if cur-last > 1 {
-				act.prepend = format[last : cur-1]
-			}
-
-			ch := format[cur]
-
-			if ch == '[' {
-				//%[prop]
-				act.key = 'x'
-				cur++
-				act.property, cur = self.parseBracket(format, cur, end)
-			} else {
-				// %?[]
-				act.key = ch
-				if (cur+1) < end && format[cur+1] == '[' {
-					cur += 2
-					length, cur_back := self.parseBracket(format, cur, end)
-					act.length, _ = strconv.Atoi(length)
-					cur = cur_back
-				}
-			}
-			self.actions = append(self.actions, act)
-			cur++
-			last = cur
-		} else {
-			cur++
-		}
-	}
-
-	if last < end {
-		act := &Action{}
-		act.prepend = format[last:]
-		self.actions = append(self.actions, act)
-	}
-}
-
-// [xxxx]
-func (self *Pattern) parseBracket(fmt string, cur int, end int) (string, int) {
-	start := cur
-	for cur < end && fmt[cur] != ']' {
-		cur++
-	}
-
-	return fmt[start:cur], cur - 1
-
-	// if cur == end {
-	// 	// not find ]
-	// 	return fmt[start:end], cur
-	// } else {
-	// 	return fmt[start:end], cur
-	// }
+	self.actions = util.ParsePattern(format)
 }
