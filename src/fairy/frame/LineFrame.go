@@ -28,7 +28,7 @@ func (self *LineFrame) Encode(buffer *fairy.Buffer) error {
 
 func (self *LineFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) {
 	delimiterCount := 1
-	pos := buffer.IndexOf('\n')
+	pos := buffer.IndexOf("\n")
 	if pos == -1 {
 		return nil, errors.New("donnot find delimiter!")
 	}

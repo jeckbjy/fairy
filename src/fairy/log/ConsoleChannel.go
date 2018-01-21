@@ -1,7 +1,12 @@
 package log
 
+import (
+	"fmt"
+)
+
 func NewConsoleChannel() *ConsoleChannel {
 	channel := &ConsoleChannel{}
+	channel.Init()
 	return channel
 }
 
@@ -15,4 +20,6 @@ func (self *ConsoleChannel) Name() string {
 
 func (self *ConsoleChannel) Write(msg *Message) {
 	// color
+	output := self.GetOutput(msg)
+	fmt.Print(output)
 }

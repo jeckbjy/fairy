@@ -22,7 +22,7 @@ type StringIdentity struct {
 }
 
 func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
-	pos := buffer.IndexOf(':')
+	pos := buffer.IndexOf(":")
 	if pos == -1 {
 		return nil, nil
 	}

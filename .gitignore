@@ -14,7 +14,9 @@
 .glide/
 
 #.vscode/
+.vscode/settings.json
 debug
 bin
 pkg
 vendor
+*.log

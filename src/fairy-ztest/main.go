@@ -1,9 +1,12 @@
 package main
 
 import (
-	// "fairy"
 	"fairy"
+	"fairy-ztest/test"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Student struct {
@@ -45,13 +48,21 @@ func TestTable() {
 
 func TestLog() {
 	fairy.Debug("%+v", "HelloWord!")
+	fairy.Debug("%+v,%+v", "asdf", 1)
+}
+
+func TestSignal() {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	<-c
 }
 
 func main() {
 	fmt.Println("start!")
-	// test.StartServer()
-	// Foo()
+	test.StartServer()
 	// TestTable()
-	TestLog()
-	fmt.Println("quit!")
+	// TestLog()
+	// TestSignal()
+	fairy.WaitExit()
+	// fmt.Println("quit!")
 }

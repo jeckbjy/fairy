@@ -23,6 +23,10 @@ func NewTimerEngine() *TimerEngine {
 	return engine
 }
 
+//////////////////////////////////////////////////////
+// TimerEngine impl
+// https://www.cnblogs.com/zhanghairong/p/3757656.html
+//////////////////////////////////////////////////////
 type Wheel struct {
 	slots   []*inlist.List
 	index   int
@@ -71,16 +75,21 @@ func (self *TimerEngine) AddTimer(timer *Timer) {
 
 func (self *TimerEngine) DelTimer(timer *Timer) {
 	self.count--
-	// remove by ?
+	timer.List().Remove(timer)
+}
+
+func (self *TimerEngine) Run() {
+	for !self.stopped {
+		self.Update()
+		time.Sleep(time.Duration(self.interval) * time.Millisecond)
+	}
 }
 
 func (self *TimerEngine) Start() {
 	if self.stopped {
+		RegisterExit(self)
 		self.stopped = false
-		go func() {
-			self.Update()
-			time.Sleep(time.Duration(self.interval) * time.Millisecond)
-		}()
+		go self.Run()
 	}
 }
 
@@ -89,6 +98,10 @@ func (self *TimerEngine) Stop() {
 		self.stopped = true
 		// notify
 	}
+}
+
+func (self *TimerEngine) OnExit() {
+	self.Stop()
 }
 
 func (self *TimerEngine) Update() {

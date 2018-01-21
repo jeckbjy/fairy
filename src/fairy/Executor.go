@@ -38,6 +38,10 @@ type Executor struct {
 	waitGroup *sync.WaitGroup
 }
 
+func (self *Executor) OnExit() {
+	self.Stop()
+}
+
 func (self *Executor) Stop() {
 	self.mutex.Lock()
 	for _, wq := range self.workQueue {
@@ -82,6 +86,10 @@ func (self *Executor) GetQueue(queueId int) *EventQueue {
 
 	if queueId < len(self.workQueue) {
 		return self.workQueue[queueId]
+	}
+
+	if len(self.workQueue) == 0 {
+		RegisterExit(self)
 	}
 
 	count := queueId - len(self.workQueue) + 1

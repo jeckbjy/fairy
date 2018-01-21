@@ -85,15 +85,20 @@ func (self *TcpTransport) ConnectBy(future *base.BaseConnectFuture, new_conn *Tc
 	}()
 }
 
-func (self *TcpTransport) Start(waiting bool) {
+func (self *TcpTransport) Start() {
 	self.waitGroup.Add(1)
-	if waiting {
-		self.waitGroup.Wait()
-	}
 }
 
 func (self *TcpTransport) Stop() {
 	close(self.stopFlag)
 	self.waitGroup.Done()
 	self.waitGroup.Wait()
+}
+
+func (self *TcpTransport) Wait() {
+	self.waitGroup.Wait()
+}
+
+func (self *TcpTransport) OnExit() {
+	self.Stop()
 }

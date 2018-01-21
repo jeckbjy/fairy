@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fairy"
 	"fairy/codec"
 	"fairy/filter"
 	"fairy/frame"
@@ -16,9 +17,11 @@ func StartClient() {
 	transport.AddFilters(
 		filter.NewTransportFilter(),
 		filter.NewFrameFilter(frame.NewLineFrame()),
-		filter.NewPacketFilter(identity.NewStringIdentity(), codec.NewJsonCodec()))
+		filter.NewPacketFilter(identity.NewStringIdentity(), codec.NewJsonCodec()),
+		filter.NewExecutorFilter())
 
 	transport.Connect("127.0.0.1:8888", 0)
-	transport.Start(true)
+	transport.Start()
+	fairy.WaitExit()
 	fmt.Println("Stop Client!")
 }

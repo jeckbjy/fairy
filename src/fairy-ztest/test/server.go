@@ -46,7 +46,7 @@ func StartServer() {
 		filter.NewExecutorFilter())
 
 	transport.Listen(":8888", 0)
-	transport.Start(true)
+	transport.Start()
 
 	fmt.Println("Stop Server!")
 }

@@ -2,7 +2,6 @@ package base
 
 import (
 	"fairy"
-	"net"
 )
 
 const (
@@ -95,8 +94,4 @@ func (self *BaseConnection) IsClientSide() bool {
 
 func (self *BaseConnection) GetTransport() fairy.Transport {
 	return self.transport
-}
-
-func (self *BaseConnection) SendBuffer(conn net.Conn, buffer *fairy.Buffer) {
-	// 遍历所有byte
 }

@@ -33,7 +33,7 @@ func (self *EventQueue) Push(ev Event) {
 func (self *EventQueue) loop(wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
-	for {
+	for !self.stopped {
 		events := list.List{}
 		self.mutex.Lock()
 		for !self.stopped && self.events.Len() == 0 {

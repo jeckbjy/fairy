@@ -6,6 +6,7 @@ type Transport interface {
 	AddFilters(filters ...Filter)
 	Listen(host string, ctype int)
 	Connect(host string, ctype int) ConnectFuture
-	Start(waiting bool)
+	Start()
 	Stop()
+	Wait()
 }

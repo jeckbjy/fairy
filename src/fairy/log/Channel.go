@@ -5,6 +5,8 @@ type Channel interface {
 	Open()
 	Close()
 	Write(msg *Message)
-	SetProperty(key string, val interface{}) bool
+	SetProperty(key string, val string) bool
 	GetConfig() *Config
+	GetLogger() *Logger
+	SetLogger(logger *Logger) 
 }
