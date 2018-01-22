@@ -49,7 +49,7 @@ func (self *TcpConnection) Write(buffer *fairy.Buffer) {
 		self.writer = list.New()
 		self.writerCond = sync.NewCond(self.writerLock)
 		self.writerFuture = base.NewFuture()
-		go self.runWriteLoop()
+		go self.sendThread()
 	}
 	self.writer.PushBack(buffer)
 	self.writerFuture.Reset()
@@ -64,8 +64,8 @@ func (self *TcpConnection) Read() *fairy.Buffer {
 
 func (self *TcpConnection) Open(conn net.Conn) {
 	self.Conn = conn
-	go self.runReadLoop()
-	go self.runWriteLoop()
+	go self.readThread()
+	go self.sendThread()
 }
 
 func (self *TcpConnection) Close() fairy.Future {
@@ -85,7 +85,7 @@ func (self *TcpConnection) Close() fairy.Future {
 	return future
 }
 
-func (self *TcpConnection) runReadLoop() {
+func (self *TcpConnection) readThread() {
 	self.waitGroup.Add(1)
 	defer self.waitGroup.Done()
 	// loop read
@@ -101,13 +101,13 @@ func (self *TcpConnection) runReadLoop() {
 				self.reader.Append(data[:n])
 				self.HandleRead(self)
 			} else {
-				self.HandleError(self, fairy.ErrReadFail)
+				self.HandleError(self, err)
 			}
 		}
 	}
 }
 
-func (self *TcpConnection) runWriteLoop() {
+func (self *TcpConnection) sendThread() {
 	// 发送
 	self.waitGroup.Add(1)
 	defer self.waitGroup.Done()
@@ -131,10 +131,19 @@ func (self *TcpConnection) runWriteLoop() {
 			self.writer.Init()
 			self.writerLock.Unlock()
 			// write all buffer
+			var err error
 			for iter := bufferList.Front(); iter != nil; iter = iter.Next() {
 				buffer := iter.Value.(*fairy.Buffer)
-				if err := buffer.SendAll(self.Conn); err != nil {
-					self.HandleError(self, err)
+				for buffIter := buffer.Front(); buffIter != nil; buffIter = buffIter.Next() {
+					data := buffIter.Value.([]byte)
+					_, err = self.Conn.Write(data)
+					if err != nil {
+						self.HandleError(self, err)
+						break
+					}
+				}
+
+				if err != nil {
 					break
 				}
 			}

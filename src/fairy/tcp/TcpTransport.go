@@ -51,28 +51,28 @@ func (self *TcpTransport) Listen(host string, ctype int) {
 }
 
 func (self *TcpTransport) Connect(host string, ctype int) fairy.ConnectFuture {
-	new_conn := NewConnection(self, self.GetFilterChain(), false, ctype)
-	future := base.NewConnectFuture(new_conn)
-	self.ConnectBy(future, new_conn, host)
+	newConn := NewConnection(self, self.GetFilterChain(), false, ctype)
+	future := base.NewConnectFuture(newConn)
+	self.ConnectBy(future, newConn, host)
 	return future
 }
 
-func (self *TcpTransport) ConnectBy(future *base.BaseConnectFuture, new_conn *TcpConnection, host string) {
+func (self *TcpTransport) ConnectBy(future fairy.ConnectFuture, newConn *TcpConnection, host string) {
 	self.waitGroup.Add(1)
 	go func() {
 		// wait for close
 		defer self.waitGroup.Done()
 
 		conn, err := net.Dial("tcp", host)
-		if future == nil || !future.IsResult(fairy.FUTURE_RESULT_TIMEOUT) {
+		if future == nil || future.Result() != fairy.FUTURE_RESULT_TIMEOUT {
 			future_result := 0
 			if err != nil {
-				new_conn.Open(conn)
-				new_conn.HandleOpen(new_conn)
+				newConn.Open(conn)
+				newConn.HandleOpen(newConn)
 				future_result = fairy.FUTURE_RESULT_SUCCEED
 			} else {
 				// panic
-				new_conn.HandleError(new_conn, fairy.ErrConnectFail)
+				newConn.HandleError(newConn, fairy.ErrConnectFail)
 				future_result = fairy.FUTURE_RESULT_FAIL
 			}
 

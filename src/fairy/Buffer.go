@@ -24,6 +24,10 @@ type Buffer struct {
 	mark     int           // 随意位置标识，不做任何校验
 }
 
+func (self *Buffer) Front() *list.Element {
+	return self.datas.Front()
+}
+
 func (self *Buffer) HasRemain(count int) bool {
 	return self.length-self.position >= count
 }
