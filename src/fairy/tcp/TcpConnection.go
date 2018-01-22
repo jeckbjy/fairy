@@ -13,26 +13,38 @@ const (
 	WRITE_FLAG_WRITING = 1 // 写当中
 )
 
-func NewConnection(tran fairy.Transport, filters fairy.FilterChain, serverSide bool, ctype int) *TcpConnection {
-	tcp_conn := &TcpConnection{}
-	tcp_conn.BaseConnection.New(tran, filters, serverSide)
-	tcp_conn.SetType(ctype)
-	tcp_conn.reader = fairy.NewBuffer()
-	tcp_conn.writerLock = &sync.Mutex{}
-	return tcp_conn
+func NewConnection(tran fairy.Transport, filters fairy.FilterChain, side bool, ctype int) *TcpConnection {
+	conn := &TcpConnection{}
+	conn.Create(tran, filters, side, ctype)
+	conn.Init()
+	return conn
 }
 
-// todo:读，写限流控制??
 type TcpConnection struct {
 	base.BaseConnection
 	net.Conn
+	stopFlag     chan bool
+	waitGroup    sync.WaitGroup
 	writerFuture *base.BaseFuture // 用于阻塞写数据完成
 	writerLock   *sync.Mutex      // 写锁
 	writerCond   *sync.Cond
 	writer       *list.List
 	reader       *fairy.Buffer
-	stopFlag     chan bool
-	waitGroup    sync.WaitGroup
+}
+
+func (self *TcpConnection) Init() {
+	self.stopFlag = make(chan bool)
+	self.reader = fairy.NewBuffer()
+	self.writerLock = &sync.Mutex{}
+
+	// lazy init
+	// self.writer = list.New()
+	// self.writerFuture = base.NewFuture()
+	// self.writerCond = sync.NewCond(self.writerLock)
+}
+
+func (self *TcpConnection) Send(obj interface{}) {
+	self.HandleWrite(self, obj)
 }
 
 func (self *TcpConnection) Flush() {
@@ -65,7 +77,7 @@ func (self *TcpConnection) Read() *fairy.Buffer {
 func (self *TcpConnection) Open(conn net.Conn) {
 	self.Conn = conn
 	go self.readThread()
-	go self.sendThread()
+	// go self.sendThread()
 }
 
 func (self *TcpConnection) Close() fairy.Future {

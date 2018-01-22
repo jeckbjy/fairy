@@ -11,29 +11,38 @@ import (
 
 func NewConnection(tran fairy.Transport, filters fairy.FilterChain, serverSide bool, ctype int) *WSConnection {
 	conn := &WSConnection{}
-	conn.BaseConnection.New(tran, filters, serverSide)
-	conn.SetType(ctype)
-	conn.reader = fairy.NewBuffer()
-	conn.writerLock = &sync.Mutex{}
+	conn.Create(tran, filters, serverSide, ctype)
+	conn.Init()
 	return conn
 }
 
 type WSConnection struct {
 	base.BaseConnection
 	*websocket.Conn
-	writerFuture *base.BaseFuture // 用于阻塞写数据完成
-	writerLock   *sync.Mutex      // 写锁
-	writerCond   *sync.Cond
-	writer       *list.List
-	reader       *fairy.Buffer
 	stopFlag     chan bool
 	waitGroup    sync.WaitGroup
+	reader       *fairy.Buffer
+	writer       *list.List
+	writerLock   *sync.Mutex // 写锁
+	writerCond   *sync.Cond
+	writerFuture *base.BaseFuture // 用于阻塞写数据完成
+}
+
+func (self *WSConnection) Init() {
+	self.reader = fairy.NewBuffer()
+	self.writerLock = &sync.Mutex{}
+	self.stopFlag = make(chan bool)
+
+	// lazy init when write
+	self.writer = nil
+	self.writerFuture = nil
+	self.writerCond = nil
 }
 
 func (self *WSConnection) Open(conn *websocket.Conn) {
 	self.Conn = conn
 	go self.readThread()
-	go self.sendThread()
+	// go self.sendThread()
 }
 
 func (self *WSConnection) Read() *fairy.Buffer {
@@ -61,6 +70,10 @@ func (self *WSConnection) Flush() {
 		// 阻塞到所有数据写完
 		self.writerFuture.Wait(-1)
 	}
+}
+
+func (self *WSConnection) Send(obj interface{}) {
+	self.HandleWrite(self, obj)
 }
 
 func (self *WSConnection) Close() fairy.Future {

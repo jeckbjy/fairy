@@ -1,4 +1,4 @@
-package test
+package echo
 
 import (
 	"fairy"
@@ -7,36 +7,24 @@ import (
 	"fairy/frame"
 	"fairy/identity"
 	"fairy/tcp"
+	"fairy/util"
 	"fmt"
 )
 
-type LoginReq struct {
-	Account  string
-	Password string
-}
-
-type LoginRsp struct {
-	Error int
-}
-
-func OnLogin(conn fairy.Connection, packet fairy.Packet) {
-	msg := packet.GetMessage().(string)
-	fmt.Println(msg)
-}
-
-func OnTimeout(t *fairy.Timer) {
-	fairy.Debug("OnTimeout!")
+func OnServerEcho(conn fairy.Connection, packet fairy.Packet) {
+	req := packet.GetMessage().(*EchoMsg)
+	fairy.Debug("%+v", req)
+	rsp := &EchoMsg{}
+	rsp.Info = "server rsp!"
+	rsp.Timestamp = util.Now()
+	conn.Send(rsp)
 }
 
 func StartServer() {
 	fmt.Println("Start Server!")
 
-	// 定时器
-	fairy.StartTimer(10, OnTimeout)
-	// register
-	fairy.RegisterMessage(&LoginReq{})
-	fairy.RegisterMessage(&LoginRsp{})
-	fairy.RegisterHandler(&LoginReq{}, OnLogin)
+	fairy.RegisterMessage(&EchoMsg{})
+	fairy.RegisterHandler(&EchoMsg{}, OnServerEcho)
 
 	transport := tcp.NewTransport()
 	transport.AddFilters(
@@ -48,5 +36,6 @@ func StartServer() {
 	transport.Listen(":8888", 0)
 	transport.Start()
 
+	fairy.WaitExit()
 	fmt.Println("Stop Server!")
 }

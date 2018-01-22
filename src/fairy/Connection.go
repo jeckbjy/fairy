@@ -32,6 +32,7 @@ type Connection interface {
 	RemoteAddr() net.Addr
 	Close() Future
 	Flush()
-	Write(buffer *Buffer)
 	Read() *Buffer
+	Write(buffer *Buffer)
+	Send(obj interface{})
 }

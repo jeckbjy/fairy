@@ -22,10 +22,11 @@ type BaseConnection struct {
 	data      interface{}
 }
 
-func (self *BaseConnection) New(transport fairy.Transport, filters fairy.FilterChain, serverSide bool) {
+func (self *BaseConnection) Create(transport fairy.Transport, filters fairy.FilterChain, side bool, kind int) {
 	self.transport = transport
 	self.FilterChain = filters
-	if serverSide {
+	self.ctype = kind
+	if side {
 		self.side = SIDE_SERVER
 	} else {
 		self.side = SIDE_CLIENT
