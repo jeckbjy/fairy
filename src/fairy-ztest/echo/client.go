@@ -45,7 +45,7 @@ func StartClient() {
 	fairy.RegisterMessage(&EchoMsg{})
 	fairy.RegisterHandler(&EchoMsg{}, OnClientEcho)
 
-	fairy.StartTimer(10000, OnTimeout)
+	// fairy.StartTimer(10000, OnTimeout)
 
 	transport := tcp.NewTransport()
 	transport.AddFilters(

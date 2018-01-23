@@ -68,7 +68,7 @@ func (self *Buffer) Split(result *Buffer) {
 		self.Clear()
 	} else if self.position > 0 {
 		// copy
-		left := 0
+		left := self.position
 		for iter := self.datas.Front(); iter != nil; {
 			temp := iter
 			iter = iter.Next()
@@ -96,6 +96,8 @@ func (self *Buffer) Split(result *Buffer) {
 		self.element = nil
 		self.offset = 0
 	}
+
+	result.Seek(0, io.SeekStart)
 }
 
 // 删除当前位置之前的数据
@@ -110,7 +112,7 @@ func (self *Buffer) Discard() {
 	}
 
 	// remove
-	left := 0
+	left := self.position
 	for iter := self.datas.Front(); iter != nil; {
 		temp := iter
 		iter = iter.Next()
@@ -142,8 +144,10 @@ func (self *Buffer) Concat() {
 		return
 	}
 
-	data := make([]byte, self.length)
-	self.Read(data)
+	data := make([]byte, 0, self.length)
+	for iter := self.datas.Front(); iter != nil; iter = iter.Next() {
+		data = append(data, iter.Value.([]byte)...)
+	}
 	self.datas.Init()
 	self.datas.PushBack(data)
 	self.element = self.datas.Front()
@@ -195,19 +199,32 @@ func (self *Buffer) Seek(offset int, whence int) error {
 		return fmt.Errorf("buffer seek overflow!")
 	}
 
-	if self.position == pos {
-		return nil
-	}
+	// check element
+	if self.element == nil {
+		if pos == 0 {
+			self.element = self.datas.Front()
+			self.offset = 0
+			self.position = 0
+			return nil
+		}
 
-	if pos == 0 || pos == self.length {
-		self.position = pos
-		self.element = nil
+		if pos == self.length {
+			self.element = self.datas.Back()
+			self.offset = len(self.element.Value.([]byte))
+			self.position = pos
+			return nil
+		}
+
+		if whence == io.SeekCurrent {
+			whence = io.SeekStart
+		}
+	} else if self.position == pos {
+		// not need
 		return nil
 	}
 
 	switch whence {
 	case io.SeekCurrent:
-		self.checkCursor()
 		if offset > 0 {
 			// 从前向后
 			iter := Iterator{}
@@ -237,6 +254,8 @@ func (self *Buffer) Seek(offset int, whence int) error {
 		self.element = iter.element
 		self.offset = iter.offset
 	}
+
+	self.position = pos
 
 	return nil
 }
@@ -346,7 +365,7 @@ func (self *Buffer) Read(buffer []byte) (int, error) {
 	iter := Iterator{}
 	iter.Create(self.element, self.offset, length)
 	for iter.Next() {
-		copy(buffer[iter.readNum:], iter.data)
+		copy(buffer[iter.lastNum:], iter.data)
 	}
 
 	// set cursor
@@ -364,35 +383,12 @@ func (self *Buffer) Write(bufffer []byte) (int, error) {
 	count := self.position + length - self.length
 	if count > 0 {
 		return 0, errors.New("Buffer.write overflow!")
-		// resize
-		// self.length += count
-		// if self.element != nil {
-		// 	data := self.element.Value.([]byte)
-		// 	remain := cap(data) - len(data)
-		// 	var canUse int
-		// 	if remain >= count {
-		// 		canUse = count
-		// 	} else {
-		// 		canUse = remain
-		// 	}
-
-		//  data = data[:len(data)+canUse]
-		// 	self.element.Value = data
-		// 	count -= canUse
-		// }
-
-		// if count > 0 {
-		// 	// create new
-		// 	newSize := util.MaxInt(count, 1024)
-		// 	data := make([]byte, count, newSize)
-		// 	self.datas.PushBack(data)
-		// }
 	}
 
 	iter := Iterator{}
 	iter.Create(self.element, self.offset, length)
 	for iter.Next() {
-		copy(iter.data, bufffer[iter.readNum:])
+		copy(iter.data, bufffer[iter.lastNum:])
 	}
 
 	// set cursor
@@ -419,6 +415,11 @@ func (self *Buffer) ToBytes() []byte {
 	}
 	self.Concat()
 	return self.datas.Front().Value.([]byte)
+}
+
+func (self *Buffer) String() string {
+	data := self.ToBytes()
+	return string(data)
 }
 
 // for io.ByteReader
@@ -455,11 +456,12 @@ func (self *Buffer) checkCursor() {
 //迭代器实现
 ////////////////////////////////////////////////////////
 type Iterator struct {
-	element *list.Element // ���前节点
+	element *list.Element // 当前节点
 	offset  int           // 当前偏移
 	length  int           // 需要读取的总长度
-	readNum int           // ���经读取��的
-	data    []byte        // 当前读��的数据
+	lastNum int           // 上次读取位置
+	readNum int           // 已经读取的长度
+	data    []byte        // 当前读取的数据
 }
 
 func (self *Iterator) Create(elem *list.Element, offset int, length int) {
@@ -471,12 +473,15 @@ func (self *Iterator) Create(elem *list.Element, offset int, length int) {
 	self.offset = offset
 	self.length = length
 	self.readNum = 0
+	self.lastNum = 0
 }
 
 func (self *Iterator) Next() bool {
 	if self.element == nil || self.readNum >= self.length {
 		return false
 	}
+
+	self.lastNum = self.readNum
 
 	needRead := self.length - self.readNum
 	for {
@@ -510,7 +515,7 @@ func (self *Iterator) Next() bool {
 }
 
 func (self *Iterator) MoveEnd() {
-	needRead := self.readNum
+	needRead := self.length - self.readNum
 	for needRead > 0 && self.element != nil {
 		data := self.element.Value.([]byte)
 		left := len(data) - self.offset
@@ -532,6 +537,7 @@ type ReverseIterator struct {
 	element *list.Element // 当前节点
 	offset  int           // 当前偏移
 	length  int           // 需要读取的总长度
+	lastNum int           // 上次读取位置
 	readNum int           // 已经读取完的
 	data    []byte        // 当前读取的数据
 }
@@ -547,6 +553,8 @@ func (self *ReverseIterator) Next() bool {
 	if self.element == nil || self.readNum >= self.length {
 		return false
 	}
+
+	self.lastNum = self.readNum
 
 	needRead := self.length - self.readNum
 	for {

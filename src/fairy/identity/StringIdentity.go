@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fairy"
 	"fairy/base"
+	"io"
 )
 
 func NewStringIdentity() *StringIdentity {
@@ -28,7 +29,16 @@ func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
 	}
 
 	// read name
-	name := ""
+	data := make([]byte, pos)
+	if _, err := buffer.Read(data); err != nil {
+		return nil, err
+	}
+
+	name := string(data)
+
+	// remove ":"
+	buffer.Seek(1, io.SeekCurrent)
+	buffer.Discard()
 
 	// create packet
 	packet := base.NewBasePacket()

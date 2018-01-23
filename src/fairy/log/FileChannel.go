@@ -27,6 +27,12 @@ func (self *FileChannel) Name() string {
 
 func (self *FileChannel) Write(msg *Message) {
 	output := self.GetOutput(msg)
+	// defer func() {
+	// 	if err := recover(); err != nil {
+	// 		fmt.Printf("%+v,%+v\n", output, err)
+	// 	}
+	// }()
+
 	self.file.WriteString(output)
 }
 

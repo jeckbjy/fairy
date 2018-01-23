@@ -72,19 +72,37 @@ func (self *BaseFilterChain) TravelFront(cb TravelCallback) {
 	for iter := self.filters.Front(); iter != nil; {
 		filter := iter.Value.(fairy.Filter)
 		action := cb(filter)
-		if action == gNextAction {
+		switch action {
+		case gNextAction:
 			iter = iter.Next()
-		} else if action == gLastAction {
+		case gLastAction:
 			iter = self.filters.Back()
-		} else {
-			break
+		case gFirstAction:
+			iter = self.filters.Front()
+		case gStopAction:
+			return
+		default:
+			return
 		}
 	}
 }
 
 func (self *BaseFilterChain) TravelBack(cb TravelCallback) {
 	// 反向遍历
-	// for iter := self.filters.Back(); iter != nil {
-
-	// }
+	for iter := self.filters.Back(); iter != nil; {
+		filter := iter.Value.(fairy.Filter)
+		action := cb(filter)
+		switch action {
+		case gNextAction:
+			iter = iter.Prev()
+		case gLastAction:
+			iter = self.filters.Front()
+		case gFirstAction:
+			iter = self.filters.Back()
+		case gStopAction:
+			return
+		default:
+			return
+		}
+	}
 }

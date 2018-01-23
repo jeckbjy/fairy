@@ -25,7 +25,6 @@ func (self *FrameFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction 
 
 		// 透传buffer
 		ctx.SetMessage(result)
-		return ctx.GetNextAction()
 	}
 
 	return ctx.GetNextAction()

@@ -34,11 +34,13 @@ func (self *LineFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) {
 	}
 
 	// check \r
-	buffer.Seek(-1, io.SeekCurrent)
-	if ch, _ := buffer.ReadByte(); ch == '\r' {
-		delimiterCount = 2
-		pos -= 1
+	if pos > 0 {
 		buffer.Seek(-1, io.SeekCurrent)
+		if ch, _ := buffer.ReadByte(); ch == '\r' {
+			delimiterCount = 2
+			pos -= 1
+			buffer.Seek(-1, io.SeekCurrent)
+		}
 	}
 
 	result := fairy.NewBuffer()
@@ -49,6 +51,9 @@ func (self *LineFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) {
 	// remove demilter
 	buffer.Seek(delimiterCount, io.SeekStart)
 	buffer.Discard()
+
+	// fairy.Debug("msgs:%+v", result.String())
+	// fairy.Debug("left:%+v", buffer.String())
 
 	return result, nil
 }

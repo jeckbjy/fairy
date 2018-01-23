@@ -27,6 +27,10 @@ func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 			return ctx.GetStopAction()
 		}
 
+		if packet == nil {
+			return ctx.GetNextAction()
+		}
+
 		err = self.Codec.Decode(packet.GetMessage(), buffer)
 		if err != nil {
 			return ctx.GetStopAction()

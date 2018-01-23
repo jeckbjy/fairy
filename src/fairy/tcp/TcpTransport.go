@@ -43,7 +43,7 @@ func (self *TcpTransport) Listen(host string, ctype int) {
 					new_conn.Open(conn)
 					new_conn.HandleOpen(new_conn)
 				} else {
-					// onError??
+					fairy.Error("accept fail!")
 				}
 			}
 		}
@@ -66,7 +66,7 @@ func (self *TcpTransport) ConnectBy(future fairy.ConnectFuture, newConn *TcpConn
 		conn, err := net.Dial("tcp", host)
 		if future == nil || future.Result() != fairy.FUTURE_RESULT_TIMEOUT {
 			future_result := 0
-			if err != nil {
+			if err == nil {
 				newConn.Open(conn)
 				newConn.HandleOpen(newConn)
 				future_result = fairy.FUTURE_RESULT_SUCCEED

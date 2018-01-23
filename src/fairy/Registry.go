@@ -39,6 +39,10 @@ type MsgInfo struct {
 	Type reflect.Type
 }
 
+func (self *MsgInfo) New() interface{} {
+	return reflect.New(self.Type).Interface()
+}
+
 type IdMap map[uint]*MsgInfo
 type NameMap map[string]*MsgInfo
 type TypeMap map[reflect.Type]*MsgInfo
@@ -136,7 +140,7 @@ func (self *Registry) GetId(msg interface{}) uint {
 func (self *Registry) CreateByName(name string) interface{} {
 	info, ok := self.nameMap[name]
 	if ok {
-		return reflect.New(info.Type)
+		return info.New()
 	}
 
 	return nil
@@ -145,7 +149,7 @@ func (self *Registry) CreateByName(name string) interface{} {
 func (self *Registry) CreateById(id uint) interface{} {
 	info, ok := self.idMap[id]
 	if ok {
-		return reflect.New(info.Type)
+		return info.New()
 	}
 
 	return nil
