@@ -189,10 +189,10 @@ func (self *Buffer) Seek(offset int, whence int) error {
 		}
 		pos = offset
 	case io.SeekEnd:
-		if offset < 0 {
-			return fmt.Errorf("Buffer seekend offset < 0")
+		if offset > 0 {
+			offset = -offset
 		}
-		pos = self.length - offset
+		pos = self.length + offset
 	}
 
 	if pos < 0 || pos > self.length {
@@ -353,6 +353,22 @@ func (self *Buffer) match(elem *list.Element, offset int, key string) bool {
 	}
 
 	return true
+}
+
+func (self *Buffer) Peek(buffer []byte) (int, error) {
+	length := len(buffer)
+	if self.position+length > self.length {
+		return 0, errors.New("Buffer.Read overflow!")
+	}
+
+	self.checkCursor()
+	iter := Iterator{}
+	iter.Create(self.element, self.offset, length)
+	for iter.Next() {
+		copy(buffer[iter.lastNum:], iter.data)
+	}
+
+	return length, nil
 }
 
 func (self *Buffer) Read(buffer []byte) (int, error) {
