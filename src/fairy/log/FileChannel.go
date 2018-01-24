@@ -21,35 +21,52 @@ type FileChannel struct {
 	file *os.File
 }
 
-func (self *FileChannel) Name() string {
+// Name return filechannel name
+func (f *FileChannel) Name() string {
 	return "File"
 }
 
-func (self *FileChannel) Write(msg *Message) {
-	output := self.GetOutput(msg)
-	// defer func() {
-	// 	if err := recover(); err != nil {
-	// 		fmt.Printf("%+v,%+v\n", output, err)
-	// 	}
-	// }()
+func (f *FileChannel) Write(msg *Message) {
+	if f.file == nil {
+		return
+	}
 
-	self.file.WriteString(output)
+	output := f.GetOutput(msg)
+
+	f.file.WriteString(output)
 }
 
-func (self *FileChannel) Open() {
-	if self.file == nil {
-		dir := path.Dir(self.path)
+// Open override base.
+func (f *FileChannel) Open() {
+	if f.file == nil {
+		dir := path.Dir(f.path)
 		os.MkdirAll(dir, os.ModePerm)
 		var err error
-		self.file, err = os.OpenFile(self.path, os.O_RDWR|os.O_CREATE, os.ModePerm)
+		f.file, err = os.OpenFile(f.path, os.O_RDWR|os.O_CREATE, os.ModePerm)
 		if err != nil {
-			fmt.Printf("log can not open file:%+v\n", self.path)
+			fmt.Printf("log can not open file:%+v\n", f.path)
 		}
 	}
 }
 
-func (self *FileChannel) Close() {
-	if self.file != nil {
-		self.file.Close()
+// Close override base.
+func (f *FileChannel) Close() {
+	if f.file != nil {
+		f.file.Close()
 	}
+}
+
+// SetProperty override base, set config.
+func (f *FileChannel) SetProperty(key string, val string) bool {
+	if f.BaseChannel.SetProperty(key, val) {
+		return true
+	}
+
+	switch key {
+	case "path":
+		f.path = val
+		return true
+	}
+
+	return false
 }

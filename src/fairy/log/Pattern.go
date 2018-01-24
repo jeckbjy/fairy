@@ -56,6 +56,7 @@ import (
 ///   * %[name] - the value of the message parameter with the given name
 ///   * %% - percent sign
 
+// for json pattern :{"time"="%y-%m=%d %H:%M:%S", "level"="%q", "file"="%U:%u", "text"="%t"}
 const DEFAULT_PATTERN = "[%y-%m-%d %H:%M:%S][%q][%U:%u][%t]"
 
 func NewPattern() *Pattern {

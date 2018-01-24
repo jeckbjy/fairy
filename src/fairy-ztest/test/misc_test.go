@@ -2,6 +2,7 @@ package test
 
 import (
 	"fairy"
+	"fairy/util/terminal"
 	"fmt"
 	"os"
 	"os/signal"
@@ -30,4 +31,13 @@ func TestSignal(t *testing.T) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-c
+}
+
+func TestTerminalColor(t *testing.T) {
+	terminal.Foreground(terminal.Red)
+	fmt.Sprintln("Red")
+	terminal.Reset()
+	terminal.Foreground(terminal.Blue)
+	fmt.Sprintln("Blue")
+	terminal.Reset()
 }
