@@ -1,12 +1,13 @@
-package echo
+package echo_ws
 
 import (
 	"fairy"
+	"fairy-websocket/ws"
+	"fairy-ztest/msg"
 	"fairy/codec"
 	"fairy/filter"
 	"fairy/frame"
 	"fairy/identity"
-	"fairy/tcp"
 	"fairy/util"
 	"fmt"
 )
@@ -18,7 +19,7 @@ func OnTimeout(timer *fairy.Timer) {
 		return
 	}
 
-	req := &EchoMsg{}
+	req := &msg.EchoMsg{}
 	req.Info = "Client Echo!"
 	req.Timestamp = util.Now()
 	gClient.Send(req)
@@ -28,26 +29,31 @@ func OnConnected(conn fairy.Connection) {
 	fairy.Debug("OnConnected")
 	gClient = conn
 
-	req := &EchoMsg{}
+	req := &msg.EchoMsg{}
 	req.Info = "Client Echo!"
 	req.Timestamp = util.Now()
 	gClient.Send(req)
 }
 
 func OnClientEcho(conn fairy.Connection, packet fairy.Packet) {
-	rsp := packet.GetMessage().(*EchoMsg)
-	fairy.Debug("%+v", rsp)
+	rsp := packet.GetMessage().(*msg.EchoMsg)
+	fairy.Debug("server echo:%+v", rsp)
+
+	req := &msg.EchoMsg{}
+	req.Info = "Client Echo!"
+	req.Timestamp = util.Now()
+	gClient.Send(req)
 }
 
 func StartClient() {
-	fmt.Println("Start Client!")
+	fmt.Println("Start WebSocket Client!")
 
-	fairy.RegisterMessage(&EchoMsg{})
-	fairy.RegisterHandler(&EchoMsg{}, OnClientEcho)
+	fairy.RegisterMessage(&msg.EchoMsg{})
+	fairy.RegisterHandler(&msg.EchoMsg{}, OnClientEcho)
 
 	// fairy.StartTimer(10000, OnTimeout)
 
-	transport := tcp.NewTransport()
+	transport := ws.NewTransport()
 	transport.AddFilters(
 		filter.NewTransportFilter(),
 		filter.NewFrameFilter(frame.NewLineFrame()),
@@ -55,7 +61,7 @@ func StartClient() {
 		filter.NewExecutorFilter(),
 		filter.NewConnectFilter(OnConnected))
 
-	transport.Connect("127.0.0.1:8888", 0)
+	transport.Connect("ws://localhost:8080", 0)
 	transport.Start()
 	fairy.WaitExit()
 	fmt.Println("Stop Client!")

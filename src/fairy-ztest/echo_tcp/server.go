@@ -1,7 +1,8 @@
-package echo
+package echo_tcp
 
 import (
 	"fairy"
+	"fairy-ztest/msg"
 	"fairy/codec"
 	"fairy/filter"
 	"fairy/frame"
@@ -12,9 +13,9 @@ import (
 )
 
 func OnServerEcho(conn fairy.Connection, packet fairy.Packet) {
-	req := packet.GetMessage().(*EchoMsg)
-	fairy.Debug("%+v", req)
-	rsp := &EchoMsg{}
+	req := packet.GetMessage().(*msg.EchoMsg)
+	fairy.Debug(" OnServerEcho: %+v", req)
+	rsp := &msg.EchoMsg{}
 	rsp.Info = "server rsp!"
 	rsp.Timestamp = util.Now()
 	conn.Send(rsp)
@@ -23,8 +24,8 @@ func OnServerEcho(conn fairy.Connection, packet fairy.Packet) {
 func StartServer() {
 	fmt.Println("Start Server!")
 
-	fairy.RegisterMessage(&EchoMsg{})
-	fairy.RegisterHandler(&EchoMsg{}, OnServerEcho)
+	fairy.RegisterMessage(&msg.EchoMsg{})
+	fairy.RegisterHandler(&msg.EchoMsg{}, OnServerEcho)
 
 	transport := tcp.NewTransport()
 	transport.AddFilters(

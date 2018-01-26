@@ -1,4 +1,4 @@
-package echo
+package msg
 
 type EchoMsg struct {
 	Info      string
