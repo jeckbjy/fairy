@@ -6,6 +6,10 @@ func Now() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
+func FromSec(t int64) int64 {
+	return t * 1000
+}
+
 func GetTimeByMsec(timestamp int64) time.Time {
 	sec := timestamp / 1000
 	nsec := (timestamp - sec*1000) * 1000

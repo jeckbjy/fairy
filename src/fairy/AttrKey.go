@@ -1,5 +1,11 @@
 package fairy
 
+const (
+	AttrCatFilter       = 0
+	AttrCatConfig       = 1
+	AttrCatConfigSystem = 2
+)
+
 type AttrKey struct {
 	name  string
 	index int
@@ -27,7 +33,7 @@ func GetAttrKeyMap(category int) *AttrKeyMap {
 	count := category - len(gAttrKeyMapArray) + 1
 	if count > 0 {
 		for i := 0; i < count; i++ {
-			gAttrKeyMapArray = append(gAttrKeyMapArray)
+			gAttrKeyMapArray = append(gAttrKeyMapArray, NewAttrKeyMap(i))
 		}
 	}
 

@@ -8,157 +8,99 @@ import (
 	"sync"
 )
 
-const (
-	WRITE_FLAG_FINISH  = 0 // 写完成
-	WRITE_FLAG_WRITING = 1 // 写当中
-)
-
 func NewConnection(tran fairy.Transport, filters fairy.FilterChain, side bool, ctype int) *TcpConnection {
 	conn := &TcpConnection{}
-	conn.Create(tran, filters, side, ctype)
-	conn.Init()
+	conn.NewBase(tran, filters, side, ctype)
 	return conn
 }
 
 type TcpConnection struct {
 	base.BaseConnection
-	net.Conn
-	stopFlag     chan bool
-	waitGroup    sync.WaitGroup
-	writerFuture *base.BaseFuture // 用于阻塞写数据完成
-	writerLock   *sync.Mutex      // 写锁
-	writerCond   *sync.Cond
-	writer       *list.List
-	reader       *fairy.Buffer
-}
-
-func (self *TcpConnection) Init() {
-	self.stopFlag = make(chan bool)
-	self.reader = fairy.NewBuffer()
-	self.writerLock = &sync.Mutex{}
-
-	// lazy init
-	// self.writer = list.New()
-	// self.writerFuture = base.NewFuture()
-	// self.writerCond = sync.NewCond(self.writerLock)
-}
-
-func (self *TcpConnection) Send(obj interface{}) {
-	self.HandleWrite(self, obj)
-}
-
-func (self *TcpConnection) Flush() {
-	if self.writerFuture != nil {
-		// 阻塞到所有数据写完
-		self.writerFuture.Wait(-1)
-	}
-}
-
-func (self *TcpConnection) Write(buffer *fairy.Buffer) {
-	self.writerLock.Lock()
-	// check delay run write loop
-	if self.writer == nil {
-		self.writer = list.New()
-		self.writerCond = sync.NewCond(self.writerLock)
-		self.writerFuture = base.NewFuture()
-		go self.sendThread()
-	}
-	self.writer.PushBack(buffer)
-	self.writerFuture.Reset()
-
-	self.writerCond.Signal()
-	self.writerLock.Unlock()
-}
-
-func (self *TcpConnection) Read() *fairy.Buffer {
-	return self.reader
+	base.BaseWriter
+	base.BaseReader
+	conn net.Conn
+	wg   sync.WaitGroup
 }
 
 func (self *TcpConnection) Open(conn net.Conn) {
-	self.Conn = conn
-	go self.readThread()
-	// go self.sendThread()
+	if self.SwapState(fairy.ConnStateClosed, fairy.ConnStateOpen) {
+		self.conn = conn
+		self.NewWriter()
+		self.NewReader()
+		go self.readThread()
+	}
 }
 
-func (self *TcpConnection) Close() fairy.Future {
-	future := base.NewFuture()
-	self.SetState(fairy.CONN_STATE_CLOSING)
-	if self.Conn != nil {
-		go func(conn net.Conn) {
-			conn.Close()
-			close(self.stopFlag)
-			self.waitGroup.Wait()
-			future.Done(fairy.FUTURE_RESULT_SUCCEED)
-			self.SetState(fairy.CONN_STATE_CLOSED)
-		}(self.Conn)
-		self.Conn = nil
-	}
+func (self *TcpConnection) LocalAddr() net.Addr {
+	return self.conn.LocalAddr()
+}
 
-	return future
+func (self *TcpConnection) RemoteAddr() net.Addr {
+	return self.conn.RemoteAddr()
+}
+
+func (self *TcpConnection) Close() {
+	// 线程安全调用
+	if self.SwapState(fairy.ConnStateOpen, fairy.ConnStateConnecting) {
+		// 异步关闭，需要等待读写线程退出，才能退出
+		go func() {
+			self.HandleClose(self)
+			self.conn.Close()
+			self.StopWrite()
+			self.wg.Wait()
+			self.SetState(fairy.ConnStateClosed)
+			self.conn = nil
+			// try reconnect
+			trans := self.GetTransport().(*TcpTransport)
+			trans.HandleConnClose(self)
+		}()
+	}
+}
+
+func (self *TcpConnection) Read() *fairy.Buffer {
+	return self.Reader()
+}
+
+func (self *TcpConnection) Write(buffer *fairy.Buffer) {
+	self.PushBuffer(buffer, self.sendThread)
+}
+
+func (self *TcpConnection) Send(msg interface{}) {
+	self.HandleWrite(self, msg)
 }
 
 func (self *TcpConnection) readThread() {
-	self.waitGroup.Add(1)
-	defer self.waitGroup.Done()
+	self.wg.Add(1)
+	defer self.wg.Done()
 	// loop read
+	bufferSize := self.GetConfig(fairy.KeyReaderBufferSize).(int)
 	for {
-		select {
-		case <-self.stopFlag:
+		// 读取数据
+		data := make([]byte, bufferSize)
+		n, err := self.conn.Read(data)
+		if err == nil {
+			self.Append(data[:n])
+			self.HandleRead(self)
+		} else {
+			self.HandleError(self, err)
 			break
-		default:
-			// 读取数据
-			data := make([]byte, 1024)
-			n, err := self.Conn.Read(data)
-			if err == nil {
-				self.reader.Append(data[:n])
-				self.HandleRead(self)
-			} else {
-				self.HandleError(self, err)
-			}
 		}
 	}
 }
 
 func (self *TcpConnection) sendThread() {
-	// 发送
-	self.waitGroup.Add(1)
-	defer self.waitGroup.Done()
-	// loop write
-	for {
-		select {
-		case <-self.stopFlag:
+	self.wg.Add(1)
+	defer self.wg.Done()
+
+	for !self.IsStopped() {
+		buffers := list.List{}
+		self.WaitBuffers(&buffers)
+
+		// write all buffer
+		err := self.WriteBuffers(self.conn, &buffers)
+		if err != nil {
+			self.HandleError(self, err)
 			break
-		default:
-			bufferList := list.List{}
-			// write buffer,轮询
-			self.writerLock.Lock()
-			for self.writer.Len() == 0 {
-				// 会先unlock,再lock
-				self.writerFuture.DoneSucceed()
-				self.writerCond.Wait()
-			}
-
-			// swap buffer
-			bufferList = *self.writer
-			self.writer.Init()
-			self.writerLock.Unlock()
-			// write all buffer
-			var err error
-			for iter := bufferList.Front(); iter != nil; iter = iter.Next() {
-				buffer := iter.Value.(*fairy.Buffer)
-				for buffIter := buffer.Front(); buffIter != nil; buffIter = buffIter.Next() {
-					data := buffIter.Value.([]byte)
-					_, err = self.Conn.Write(data)
-					if err != nil {
-						self.HandleError(self, err)
-						break
-					}
-				}
-
-				if err != nil {
-					break
-				}
-			}
 		}
 	}
 }

@@ -2,15 +2,14 @@ package fairy
 
 import "net"
 
+// ConnState
 const (
-	CONN_STATE_CLOSED     = 0
-	CONN_STATE_OPEN       = 1
-	CONN_STATE_CONNECTING = 2
-	CONN_STATE_CLOSING    = 3
+	ConnStateClosed     = 0
+	ConnStateOpen       = 1
+	ConnStateConnecting = 2
 )
 
-// Future support(CloseFuture,WriteFuture)???
-// 常用属性：Type,ConnId,Uid，OpenId，UserData
+// Connection has properties Type ConnId,Uid,OpenId,Data,State,Side and so on
 type Connection interface {
 	AttrMap
 	GetType() int
@@ -23,14 +22,15 @@ type Connection interface {
 	SetOpenId(openid string)
 	GetData() interface{}
 	SetData(data interface{})
-	GetState() int
-	IsState(state int) bool
+	GetState() int32
+	SetState(state int32)
 	IsServerSide() bool
 	IsClientSide() bool
 	GetTransport() Transport
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
-	Close() Future
+	// operations
+	Close()
 	Flush()
 	Read() *Buffer
 	Write(buffer *Buffer)

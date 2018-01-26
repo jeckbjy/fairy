@@ -2,6 +2,7 @@ package test
 
 import (
 	"fairy"
+	"fairy/util"
 	"fairy/util/terminal"
 	"fmt"
 	"os"
@@ -40,4 +41,20 @@ func TestTerminalColor(t *testing.T) {
 	terminal.Foreground(terminal.Blue)
 	fmt.Sprintln("Blue")
 	terminal.Reset()
+}
+
+func TestTimer(t *testing.T) {
+	var gTimerStart = util.Now()
+	fairy.StartTimer(util.FromSec(2), func(timer *fairy.Timer) {
+		diff := util.Now() - gTimerStart
+		if diff/1000 != 2 {
+			t.Error("timer fail!")
+		} else {
+			t.Log("timer succeed!")
+		}
+
+		os.Exit(0)
+	})
+
+	fairy.WaitExit()
 }

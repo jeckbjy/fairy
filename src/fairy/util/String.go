@@ -7,11 +7,39 @@ import (
 	"unicode/utf8"
 )
 
+func SafeParseInt(ptr *int, str string) {
+	val, err := strconv.Atoi(str)
+	if err == nil {
+		*ptr = val
+	}
+}
+
+func SafeParseUint(ptr *uint, str string) {
+	val, err := strconv.ParseUint(str, 10, 0)
+	if err == nil {
+		*ptr = uint(val)
+	}
+}
+
+func SafeParseInt64(ptr *int64, str string) {
+	val, err := strconv.ParseInt(str, 10, 0)
+	if err == nil {
+		*ptr = val
+	}
+}
+
+func SafeParseUint64(ptr *uint64, str string) {
+	val, err := strconv.ParseUint(str, 10, 0)
+	if err == nil {
+		*ptr = val
+	}
+}
+
 func ParseInt64(str string) (int64, error) {
 	return strconv.ParseInt(str, 10, 0)
 }
 
-func ParseUInt64(str string) (uint64, error) {
+func ParseUint64(str string) (uint64, error) {
 	return strconv.ParseUint(str, 10, 0)
 }
 

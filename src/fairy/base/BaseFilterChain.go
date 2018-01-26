@@ -62,13 +62,18 @@ func (self *BaseFilterChain) HandleWrite(conn fairy.Connection, msg interface{})
 func (self *BaseFilterChain) HandleError(conn fairy.Connection, err error) {
 	ctx := NewContext(self, conn)
 	ctx.SetError(err)
-	self.TravelFront(func(filter fairy.Filter) fairy.FilterAction {
+	result := self.TravelFront(func(filter fairy.Filter) fairy.FilterAction {
 		return filter.HandleError(ctx)
 	})
+
+	if result {
+		// trigger close when travel all filters
+		conn.Close()
+	}
 }
 
-// process
-func (self *BaseFilterChain) TravelFront(cb TravelCallback) {
+// TravelFront result:true mean travel all filters
+func (self *BaseFilterChain) TravelFront(cb TravelCallback) bool {
 	for iter := self.filters.Front(); iter != nil; {
 		filter := iter.Value.(fairy.Filter)
 		action := cb(filter)
@@ -80,14 +85,16 @@ func (self *BaseFilterChain) TravelFront(cb TravelCallback) {
 		case gFirstAction:
 			iter = self.filters.Front()
 		case gStopAction:
-			return
+			return false
 		default:
-			return
+			return false
 		}
 	}
+
+	return true
 }
 
-func (self *BaseFilterChain) TravelBack(cb TravelCallback) {
+func (self *BaseFilterChain) TravelBack(cb TravelCallback) bool {
 	// 反向遍历
 	for iter := self.filters.Back(); iter != nil; {
 		filter := iter.Value.(fairy.Filter)
@@ -100,9 +107,11 @@ func (self *BaseFilterChain) TravelBack(cb TravelCallback) {
 		case gFirstAction:
 			iter = self.filters.Back()
 		case gStopAction:
-			return
+			return false
 		default:
-			return
+			return false
 		}
 	}
+
+	return true
 }

@@ -19,8 +19,25 @@ type ConnectFilter struct {
 
 func (self *ConnectFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction {
 	conn := ctx.GetConnection()
-	if conn.IsClientSide() {
+	if conn.IsClientSide() && self.cb != nil {
 		self.cb(conn)
+	}
+	return ctx.GetNextAction()
+}
+
+func (self *ConnectFilter) HandleError(ctx fairy.FilterContext) fairy.FilterAction {
+	conn := ctx.GetConnection()
+	if conn.IsClientSide() {
+		// conn.Reconnect()
+	}
+
+	return ctx.GetNextAction()
+}
+
+func (self *ConnectFilter) HandleClose(ctx fairy.FilterContext) fairy.FilterAction {
+	conn := ctx.GetConnection()
+	if conn.IsClientSide() {
+		// conn.Reconnect()
 	}
 	return ctx.GetNextAction()
 }

@@ -63,7 +63,7 @@ func setField(field *reflect.Value, str string) error {
 			return err
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if val, err := util.ParseUInt64(str); err == nil {
+		if val, err := util.ParseUint64(str); err == nil {
 			field.SetUint(val)
 		} else {
 			return err

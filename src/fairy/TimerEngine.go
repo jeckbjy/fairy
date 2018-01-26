@@ -19,6 +19,7 @@ var gTimerEngine *TimerEngine
 func GetTimerEngine() *TimerEngine {
 	if gTimerEngine == nil {
 		gTimerEngine = NewTimerEngine()
+		gTimerEngine.Start()
 	}
 
 	return gTimerEngine
@@ -85,8 +86,8 @@ type TimerEngine struct {
 }
 
 func (self *TimerEngine) Create() {
-	self.SetInterval(1)
-	self.timestamp = 0
+	self.SetInterval(50)
+	self.timestamp = util.Now()
 	self.count = 0
 	self.executor = GetExecutor()
 	self.pendings = inlist.New()
@@ -111,7 +112,7 @@ func (self *TimerEngine) SetExecutor(exec *Executor) {
 }
 
 func (self *TimerEngine) SetInterval(interval int) {
-	self.interval = int64(interval) * int64(time.Millisecond)
+	self.interval = int64(interval)
 }
 
 func (self *TimerEngine) AddTimer(timer *Timer) {
@@ -158,7 +159,7 @@ func (self *TimerEngine) Update() {
 }
 
 func (self *TimerEngine) Tick(now int64) {
-	oldTimestamp := self.timestamp
+	oldTime := self.timestamp
 	self.timestamp = now
 
 	pendings := inlist.List{}
@@ -179,7 +180,7 @@ func (self *TimerEngine) Tick(now int64) {
 
 			// reset timer
 			if timer.Delay > 0 {
-				elapse := timer.Timestamp - oldTimestamp
+				elapse := timer.Timestamp - oldTime
 				left := int64(timer.Delay) - elapse
 				if left > 0 {
 					timer.Delay = int(left)
@@ -203,8 +204,7 @@ func (self *TimerEngine) Tick(now int64) {
 
 	} else {
 		// tick all timer
-		ticks := now - oldTimestamp
-		for ticks > 0 {
+		for ticks := now - oldTime; ticks > 0; ticks-- {
 			wheel := self.wheels[0]
 			// process timer list
 			timers := wheel.Current()

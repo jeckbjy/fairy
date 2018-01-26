@@ -1,5 +1,6 @@
 package fairy
 
+// error must close??
 // 每个Filter要求是无状态的，如果需要存储数据，请使用AttrMap
 type Filter interface {
 	HandleRead(ctx FilterContext) FilterAction
