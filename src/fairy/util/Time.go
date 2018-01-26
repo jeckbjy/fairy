@@ -2,6 +2,10 @@ package util
 
 import "time"
 
+func Sleep(msec int64) {
+	time.Sleep(time.Duration(msec) * time.Millisecond)
+}
+
 func Now() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }

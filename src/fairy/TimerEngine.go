@@ -9,25 +9,36 @@ import (
 )
 
 const (
-	WHEEL_NUM = 3             // 初始wheel个数(2^30)，可以扩展
-	SLOT_POW  = 10            // 2^SLOT_POW
-	SLOT_MAX  = 1 << SLOT_POW // 个数
+	TIME_INTERVAL = 1             // 默认时间间隔
+	WHEEL_NUM     = 3             // 初始wheel个数(2^30)，可以扩展
+	SLOT_POW      = 10            // 2^SLOT_POW
+	SLOT_MAX      = 1 << SLOT_POW // 个数
 )
 
+var gAsyncTimerEngine *TimerEngine
 var gTimerEngine *TimerEngine
 
+func GetAsyncTimerEngine() *TimerEngine {
+	util.Once(gAsyncTimerEngine, func() {
+		gAsyncTimerEngine = NewTimerEngine(nil)
+		gAsyncTimerEngine.Start()
+	})
+
+	return gAsyncTimerEngine
+}
+
 func GetTimerEngine() *TimerEngine {
-	if gTimerEngine == nil {
-		gTimerEngine = NewTimerEngine()
+	util.OnceEx(gTimerEngine, func() {
+		gTimerEngine = NewTimerEngine(GetExecutor())
 		gTimerEngine.Start()
-	}
+	})
 
 	return gTimerEngine
 }
 
-func NewTimerEngine() *TimerEngine {
+func NewTimerEngine(exec *Executor) *TimerEngine {
 	engine := &TimerEngine{}
-	engine.Create()
+	engine.Create(exec)
 	return engine
 }
 
@@ -71,7 +82,7 @@ func (self *Wheel) Push(timer *Timer, delta uint64) {
 
 //////////////////////////////////////////////////////
 // TimerEngine
-// https://www.cnblogs.com/zhanghairong/p/3757656.html
+// TODO:AddTimer and DelTimer is not thread safe!!!
 //////////////////////////////////////////////////////
 type TimerEngine struct {
 	timestamp int64
@@ -85,11 +96,11 @@ type TimerEngine struct {
 	timeMax   uint64
 }
 
-func (self *TimerEngine) Create() {
-	self.SetInterval(50)
+func (self *TimerEngine) Create(exec *Executor) {
+	self.SetInterval(TIME_INTERVAL)
+	self.executor = exec
 	self.timestamp = util.Now()
 	self.count = 0
-	self.executor = GetExecutor()
 	self.pendings = inlist.New()
 	self.stopped = true
 	self.mutex = &sync.Mutex{}
@@ -117,14 +128,20 @@ func (self *TimerEngine) SetInterval(interval int) {
 
 func (self *TimerEngine) AddTimer(timer *Timer) {
 	if timer.Timestamp > self.timestamp {
+		self.mutex.Lock()
 		atomic.AddInt32(&self.count, 1)
 		self.push(timer)
+		self.mutex.Unlock()
 	}
 }
 
 func (self *TimerEngine) DelTimer(timer *Timer) {
-	atomic.AddInt32(&self.count, -1)
-	timer.List().Remove(timer)
+	self.mutex.Lock()
+	if timer.IsRunning() {
+		atomic.AddInt32(&self.count, -1)
+		timer.List().Remove(timer)
+	}
+	self.mutex.Unlock()
 }
 
 func (self *TimerEngine) Run() {
@@ -145,7 +162,6 @@ func (self *TimerEngine) Start() {
 func (self *TimerEngine) Stop() {
 	if !self.stopped {
 		self.stopped = true
-		// notify
 	}
 }
 
@@ -154,84 +170,84 @@ func (self *TimerEngine) OnExit() {
 }
 
 func (self *TimerEngine) Update() {
-	now := util.Now()
-	self.Tick(now)
+	oldTime := self.timestamp
+	newTime := util.Now()
+	self.timestamp = newTime
+	if newTime <= oldTime {
+		// 可能由于重新调时间导致
+		self.build(oldTime, newTime)
+	} else {
+		self.tick(oldTime, newTime)
+	}
+
+	// check timer change
 }
 
-func (self *TimerEngine) Tick(now int64) {
-	oldTime := self.timestamp
-	self.timestamp = now
-
+func (self *TimerEngine) build(oldTime int64, newTime int64) {
+	// reset all timer
+	self.mutex.Lock()
 	pendings := inlist.List{}
-	if now < self.timestamp {
-		// reset all timer
-		timers := inlist.List{}
-		for _, wheel := range self.wheels {
-			for _, slot := range wheel.slots {
-				timers.MoveBackList(slot)
-			}
-		}
-
-		// reset
-		for iter := timers.Front(); iter != nil; iter = inlist.Next(iter) {
-			timer := iter.(*Timer)
-			iter = inlist.Next(iter)
-			timers.Remove(timer)
-
-			// reset timer
-			if timer.Delay > 0 {
-				elapse := timer.Timestamp - oldTime
-				left := int64(timer.Delay) - elapse
-				if left > 0 {
-					timer.Delay = int(left)
-					timer.Timestamp = now + left
-				}
-			}
-
-			if timer.Timestamp > now {
-				// push back
-				self.push(timer)
-			} else {
-				// check timestamp
-				if self.executor == nil || timer.Async {
-					timer.Invoke()
-					atomic.AddInt32(&self.count, -1)
-				} else {
-					pendings.PushBack(timer)
-				}
-			}
-		}
-
-	} else {
-		// tick all timer
-		for ticks := now - oldTime; ticks > 0; ticks-- {
-			wheel := self.wheels[0]
-			// process timer list
-			timers := wheel.Current()
-			for iter := timers.Front(); iter != nil; {
-				timer := iter.(*Timer)
-				iter = inlist.Next(iter)
-				timers.Remove(timer)
-
-				if self.executor == nil || timer.Async {
-					timer.Invoke()
-					atomic.AddInt32(&self.count, -1)
-				} else {
-					pendings.PushBack(timer)
-				}
-			}
-
-			// step tick
-			self.cascade()
+	for _, wheel := range self.wheels {
+		wheel.index = 0
+		for _, slot := range wheel.slots {
+			pendings.MoveBackList(slot)
 		}
 	}
 
-	// pendings for executor invoke
-	if pendings.Len() > 0 {
-		self.mutex.Lock()
+	//
+	for iter := pendings.Front(); iter != nil; {
+		timer := iter.(*Timer)
+		iter = inlist.Next(iter)
+		timer.reset(oldTime, newTime)
+
+		//
+		if timer.Timestamp >= newTime {
+			pendings.Remove(timer)
+			self.push(timer)
+		}
+	}
+
+	if self.executor != nil && pendings.Len() > 0 {
 		self.pendings.MoveBackList(&pendings)
 		self.executor.Dispatch(NewTimerEvent(self))
-		self.mutex.Unlock()
+	}
+
+	self.mutex.Unlock()
+
+	// async call
+	for iter := pendings.Front(); iter != nil; {
+		timer := iter.(*Timer)
+		iter = inlist.Next(iter)
+		timer.Invoke()
+		atomic.AddInt32(&self.count, -1)
+	}
+}
+
+func (self *TimerEngine) tick(oldTime int64, newTime int64) {
+	self.mutex.Lock()
+	pendings := inlist.List{}
+	// tick all timer
+	for ticks := newTime - oldTime; ticks > 0; ticks-- {
+		wheel := self.wheels[0]
+		// process timer list
+		pendings.MoveBackList(wheel.Current())
+		// step tick
+		self.cascade()
+	}
+
+	if self.executor != nil && pendings.Len() > 0 {
+		self.pendings.MoveBackList(&pendings)
+		self.executor.Dispatch(NewTimerEvent(self))
+	}
+
+	self.mutex.Unlock()
+
+	// async call
+	for iter := pendings.Front(); iter != nil; {
+		timer := iter.(*Timer)
+		iter = inlist.Next(iter)
+		timer.Invoke()
+		atomic.AddInt32(&self.count, -1)
 	}
 }
 
@@ -266,7 +282,7 @@ func (self *TimerEngine) Invoke() {
 	self.mutex.Unlock()
 
 	// invoke
-	for iter := pendings.Front(); iter != nil; inlist.Next(iter) {
+	for iter := pendings.Front(); iter != nil; iter = inlist.Next(iter) {
 		timer := iter.(*Timer)
 		timer.Invoke()
 		atomic.AddInt32(&self.count, -1)

@@ -9,9 +9,9 @@ import (
 var gDispatcher *Dispatcher
 
 func GetDispatcher() *Dispatcher {
-	if gDispatcher == nil {
+	util.Once(gDispatcher, func() {
 		gDispatcher = NewDispatcher()
-	}
+	})
 
 	return gDispatcher
 }

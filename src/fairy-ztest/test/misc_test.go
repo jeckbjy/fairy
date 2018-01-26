@@ -44,17 +44,10 @@ func TestTerminalColor(t *testing.T) {
 }
 
 func TestTimer(t *testing.T) {
-	var gTimerStart = util.Now()
-	fairy.StartTimer(util.FromSec(2), func(timer *fairy.Timer) {
-		diff := util.Now() - gTimerStart
-		if diff/1000 != 2 {
-			t.Error("timer fail!")
-		} else {
-			t.Log("timer succeed!")
-		}
-
-		os.Exit(0)
+	tt := util.Now()
+	fairy.StartTimer(10, func(timer *fairy.Timer) {
+		fairy.Debug("OnTimer out:%+v", util.Now()-tt)
 	})
 
-	fairy.WaitExit()
+	util.Sleep(10000)
 }

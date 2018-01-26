@@ -50,10 +50,11 @@ func (self *BaseWriter) PushBuffer(buffer *fairy.Buffer, cb fairy.Callback) {
 	self.lazyInit()
 	self.buffers.PushBack(buffer)
 	self.future.Reset()
-	if !self.stopped {
-		self.stopped = true
+	if self.stopped {
+		self.stopped = false
 		go cb()
 	}
+	self.cond.Signal()
 	self.mutex.Unlock()
 }
 

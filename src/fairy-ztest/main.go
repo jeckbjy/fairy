@@ -1,34 +1,24 @@
 package main
 
 import (
-	"fairy"
-	"fairy/util"
-	"os"
+	"fairy-ztest/echo_tcp"
+	"fairy-ztest/echo_ws"
+	"flag"
 )
 
-func TestTimer() {
-	var gTimerStart = util.Now()
-	fairy.StartTimer(util.FromSec(20), func(timer *fairy.Timer) {
-		diff := util.Now() - gTimerStart
-		if diff/1000 != 20 {
-			fairy.Error("timer fail!")
-		} else {
-			fairy.Debug("timer succeed!")
-		}
-
-		os.Exit(0)
-	})
-
-	fairy.WaitExit()
-}
-
 func main() {
-	TestTimer()
-	// mode := flag.String("m", "server", "server mode")
-	// flag.Parse()
-	// if *mode == "server" {
-	// 	echo.StartServer()
-	// } else {
-	// 	echo.StartClient()
-	// }
+	mode_ptr := flag.String("m", "client-ws", "server mode")
+	flag.Parse()
+	mode := *mode_ptr
+
+	switch mode {
+	case "server":
+		echo_tcp.StartServer()
+	case "client":
+		echo_tcp.StartClient()
+	case "server-ws":
+		echo_ws.StartServer()
+	case "client-ws":
+		echo_ws.StartClient()
+	}
 }

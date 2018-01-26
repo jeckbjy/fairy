@@ -14,7 +14,6 @@ type Timer struct {
 	engine    *TimerEngine
 	cb        TimerCallback
 	Timestamp int64       // 时间戳
-	Async     bool        // 是否需要异步执行,默认false，需要Post到Executor中执行
 	Delay     int         // 不为零，表示是Delay模式
 	Count     int         // 触发次数
 	Tag       int         // 自定义Tag
@@ -49,6 +48,18 @@ func (self *Timer) IsDelayMode() bool {
 	return self.Delay != 0
 }
 
+func (self *Timer) reset(oldTime int64, newTime int64) {
+	if self.Delay <= 0 {
+		return
+	}
+	elapse := self.Timestamp - oldTime
+	delay := int64(self.Delay) - elapse
+	if delay > 0 {
+		self.Delay = int(delay)
+		self.Timestamp = newTime + delay
+	}
+}
+
 func (self *Timer) Restart(timestamp int64) {
 	if timestamp < TIMER_DELAY_MAX {
 		self.Delay = int(timestamp)
@@ -80,7 +91,7 @@ func (self *Timer) IsRunning() bool {
 }
 
 //当timestamp小于TIMER_DELAY_MAX时，代表延迟时间
-func NewTimer(timestamp int64, cb TimerCallback) *Timer {
+func NewTimer(timestamp int64, cb TimerCallback, engine *TimerEngine) *Timer {
 	delay := 0
 	if timestamp < TIMER_DELAY_MAX {
 		delay = int(timestamp)
@@ -91,12 +102,13 @@ func NewTimer(timestamp int64, cb TimerCallback) *Timer {
 	t.Timestamp = timestamp
 	t.Delay = delay
 	t.cb = cb
+	t.engine = engine
 	return t
 }
 
 // 快速创建并启动
 func StartTimer(timestamp int64, cb TimerCallback) *Timer {
-	t := NewTimer(timestamp, cb)
+	t := NewTimer(timestamp, cb, GetTimerEngine())
 	t.Start()
 	return t
 }

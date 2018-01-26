@@ -1,15 +1,16 @@
 package fairy
 
 import (
+	"fairy/util"
 	"sync"
 )
 
 var gExecutor *Executor
 
 func GetExecutor() *Executor {
-	if gExecutor == nil {
+	util.Once(gExecutor, func() {
 		gExecutor = NewExecutor()
-	}
+	})
 
 	return gExecutor
 }

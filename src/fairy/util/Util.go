@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"os"
 	"strings"
+	"sync"
 )
 
 func SwapList(a *list.List, b *list.List) {
@@ -38,4 +39,30 @@ func Exists(path string) bool {
 	}
 
 	return true
+}
+
+// 非递归锁不能嵌套使用
+var gOnceMutex sync.Mutex
+
+func Once(inst interface{}, cb func()) {
+	if inst == nil {
+		gOnceMutex.Lock()
+		if inst == nil {
+			cb()
+		}
+		gOnceMutex.Unlock()
+	}
+}
+
+// 防止递归锁
+var gOnceMutexEx sync.Mutex
+
+func OnceEx(inst interface{}, cb func()) {
+	if inst == nil {
+		gOnceMutexEx.Lock()
+		if inst == nil {
+			cb()
+		}
+		gOnceMutexEx.Unlock()
+	}
 }

@@ -9,9 +9,9 @@ import (
 var gRegistry *Registry
 
 func GetRegistry() *Registry {
-	if gRegistry == nil {
+	util.Once(gRegistry, func() {
 		gRegistry = NewRegistry()
-	}
+	})
 
 	return gRegistry
 }

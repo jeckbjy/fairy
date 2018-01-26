@@ -1,4 +1,4 @@
-package websocket
+package ws
 
 import (
 	"fairy"
@@ -89,11 +89,12 @@ func (self *WSTransport) ConnectBy(future fairy.ConnectFuture, newConn *WSConnec
 		conn, _, err := websocket.DefaultDialer.Dial(host, nil)
 		if future == nil || future.Result() != fairy.FUTURE_RESULT_TIMEOUT {
 			result := 0
-			if err != nil {
+			if err == nil {
 				newConn.Open(conn)
 				newConn.HandleOpen(newConn)
 				result = fairy.FUTURE_RESULT_SUCCEED
 			} else {
+				fairy.Debug("connect fail!:%+v", err)
 				newConn.HandleError(newConn, fairy.ErrConnectFail)
 				result = fairy.FUTURE_RESULT_FAIL
 			}
