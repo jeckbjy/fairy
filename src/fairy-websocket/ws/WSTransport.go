@@ -5,6 +5,7 @@ import (
 	"fairy/base"
 	"net"
 	"net/http"
+	"net/url"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -74,6 +75,16 @@ func (self *WSTransport) Listen(host string, kind int) {
 }
 
 func (self *WSTransport) Connect(host string, kind int) fairy.ConnectFuture {
+	// url check
+	u, err := url.Parse(host)
+	if err != nil {
+		return nil
+	}
+
+	if (u.Scheme != "ws") && (u.Scheme != "wss") {
+		return nil
+	}
+
 	newConn := NewConnection(self, self.GetFilterChain(), false, kind)
 	future := base.NewConnectFuture(newConn)
 	self.ConnectBy(future, newConn, host)
