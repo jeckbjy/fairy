@@ -41,8 +41,8 @@ func (self *TelnetFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 			str := result.String()
 			fmt.Printf("%+v", str)
 			ctx.SetMessage(str)
-			conn := ctx.GetConnection()
-			conn.Send(str)
+			// conn := ctx.GetConnection()
+			// conn.Send(str)
 		}
 	}
 
