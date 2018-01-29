@@ -10,8 +10,8 @@ type Transport interface {
 	GetConfig(key *AttrKey) interface{}
 	SetFilterChain(chain FilterChain)
 	AddFilters(filters ...Filter)
-	Listen(host string, ctype int)
-	Connect(host string, ctype int) ConnectFuture
+	Listen(host string, ctype int) error
+	Connect(host string, ctype int) (ConnectFuture, error)
 	Start()
 	Stop()
 	Wait()

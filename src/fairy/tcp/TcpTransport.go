@@ -10,57 +10,57 @@ import (
 func NewTransport() fairy.Transport {
 	tran := &TcpTransport{}
 	tran.NewBase()
-	tran.stopFlag = make(chan bool)
-	tran.waitGroup = sync.WaitGroup{}
+	tran.wg = sync.WaitGroup{}
 	return tran
 }
 
 type TcpTransport struct {
 	base.BaseTransport
-	stopFlag  chan bool
-	waitGroup sync.WaitGroup
+	wg        sync.WaitGroup
+	listeners []net.Listener
 }
 
-func (t *TcpTransport) Listen(host string, ctype int) {
+func (t *TcpTransport) Listen(host string, ctype int) error {
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	t.waitGroup.Add(1)
-	go func() {
-		defer t.waitGroup.Done()
+	t.wg.Add(1)
 
+	t.listeners = append(t.listeners, listener)
+
+	go func() {
 		for {
-			select {
-			case <-t.stopFlag:
+			conn, err := listener.Accept()
+			if err != nil {
 				break
-			default:
-				conn, err := listener.Accept()
-				if err == nil {
-					newConn := NewConnection(t, t.GetFilterChain(), true, ctype)
-					newConn.Open(conn)
-					newConn.HandleOpen(newConn)
-				} else {
-					fairy.Error("accept fail!")
-				}
 			}
+
+			newConn := NewConnection(t, t.GetFilterChain(), true, ctype)
+			newConn.Open(conn)
+			newConn.HandleOpen(newConn)
 		}
+
+		t.wg.Done()
 	}()
+
+	return nil
 }
 
-func (t *TcpTransport) Connect(host string, ctype int) fairy.ConnectFuture {
+func (t *TcpTransport) Connect(host string, ctype int) (fairy.ConnectFuture, error) {
 	newConn := NewConnection(t, t.GetFilterChain(), false, ctype)
+	newConn.Host = host
 	future := base.NewConnectFuture(newConn)
 	t.ConnectBy(future, newConn, host)
-	return future
+	return future, nil
 }
 
 func (t *TcpTransport) ConnectBy(future fairy.ConnectFuture, newConn *TcpConnection, host string) {
-	t.waitGroup.Add(1)
+	t.wg.Add(1)
 	go func() {
 		// wait for close
-		defer t.waitGroup.Done()
+		defer t.wg.Done()
 
 		conn, err := net.Dial("tcp", host)
 		if future == nil || future.Result() != fairy.FUTURE_RESULT_TIMEOUT {
@@ -84,39 +84,40 @@ func (t *TcpTransport) ConnectBy(future fairy.ConnectFuture, newConn *TcpConnect
 	}()
 }
 
+func (t *TcpTransport) TryReconnect(conn *TcpConnection) bool {
+	if conn.IsClientSide() && t.IsNeedReconnect() {
+		// 断线重连
+		if t.CfgReconnectInterval == 0 {
+			t.ConnectBy(nil, conn, conn.Host)
+		} else {
+			fairy.StartTimer(int64(t.CfgReconnectInterval*1000), func(*fairy.Timer) {
+				t.ConnectBy(nil, conn, conn.Host)
+			})
+		}
+		return true
+	}
+	return false
+}
+
 func (t *TcpTransport) Start() {
-	t.waitGroup.Add(1)
 }
 
 func (t *TcpTransport) Stop() {
-	close(t.stopFlag)
-	t.waitGroup.Done()
-	t.waitGroup.Wait()
+	// close all listener
+	for _, listener := range t.listeners {
+		listener.Close()
+	}
+
+	t.listeners = nil
+
+	// stop reconnect
+	t.CfgReconnectInterval = -1
 }
 
 func (t *TcpTransport) Wait() {
-	t.waitGroup.Wait()
+	t.wg.Wait()
 }
 
 func (t *TcpTransport) OnExit() {
 	t.Stop()
-}
-
-func (t *TcpTransport) Reconnect(conn *TcpConnection) {
-	// 断线重连
-	if t.CfgReconnectInterval == 0 {
-		t.ConnectBy(nil, conn, conn.Host)
-	} else {
-		fairy.StartTimer(int64(t.CfgReconnectInterval*1000), func(*fairy.Timer) {
-			t.ConnectBy(nil, conn, conn.Host)
-		})
-	}
-}
-
-func (t *TcpTransport) HandleConnClose(conn *TcpConnection) {
-	if conn.IsClientSide() && t.IsNeedReconnect() {
-		t.Reconnect(conn)
-	} else {
-		// reomve conn??
-	}
 }

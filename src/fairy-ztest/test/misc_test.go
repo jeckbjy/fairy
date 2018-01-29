@@ -5,6 +5,7 @@ import (
 	"fairy/util"
 	"fairy/util/terminal"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,4 +51,37 @@ func TestTimer(t *testing.T) {
 	})
 
 	util.Sleep(10000)
+}
+
+func TestChannel(t *testing.T) {
+	t.Log("start!!!")
+	stopChan := make(chan bool)
+	listener, err := net.Listen("tcp", ":8866")
+	if err != nil {
+		t.Log("aaaaaaa")
+		return
+	}
+	go func() {
+		select {
+		case <-stopChan:
+			t.Log("stop chan!")
+			return
+		default:
+			t.Log("accept begin")
+			_, err := listener.Accept()
+			if err != nil {
+				fmt.Println("accept fail!")
+			}
+			t.Log("accept end")
+		}
+	}()
+
+	util.Sleep(1000)
+	close(stopChan)
+	util.Sleep(1000)
+	listener.Close()
+	util.Sleep(1000)
+	close(stopChan)
+	util.Sleep(1000)
+	t.Error("end!!!")
 }

@@ -62,7 +62,7 @@ func (self *WSConnection) Close() {
 			self.conn = nil
 			// try reconnect
 			trans := self.GetTransport().(*WSTransport)
-			trans.HandleConnClose(self)
+			trans.TryReconnect(self)
 		}()
 	}
 }

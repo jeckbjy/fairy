@@ -3,6 +3,7 @@ package ws
 import (
 	"fairy"
 	"fairy/base"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,7 +15,6 @@ import (
 func NewTransport() fairy.Transport {
 	ws := &WSTransport{}
 	ws.NewBase()
-	ws.stopped = make(chan bool)
 	ws.wg = sync.WaitGroup{}
 	return ws
 }
@@ -44,51 +44,48 @@ func (self *ServeHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 type WSTransport struct {
 	base.BaseTransport
-	stopped chan bool
-	wg      sync.WaitGroup
+	wg        sync.WaitGroup
+	listeners []net.Listener
 }
 
-func (self *WSTransport) Listen(host string, kind int) {
+func (self *WSTransport) Listen(host string, kind int) error {
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
-		panic(err)
-		return
+		return err
 	}
 
 	self.wg.Add(1)
+	self.listeners = append(self.listeners, listener)
 	go func() {
 		defer self.wg.Done()
-
 		for {
-			select {
-			case <-self.stopped:
+			svr := http.Server{Handler: &ServeHttpHandler{kind: kind, owner: self}}
+			err := svr.Serve(listener)
+			if err != nil {
 				break
-			default:
-				svr := http.Server{Handler: &ServeHttpHandler{kind: kind, owner: self}}
-				err := svr.Serve(listener)
-				if err != nil {
-					fairy.Error("%+v", err)
-				}
 			}
 		}
 	}()
+
+	return nil
 }
 
-func (self *WSTransport) Connect(host string, kind int) fairy.ConnectFuture {
+func (self *WSTransport) Connect(host string, kind int) (fairy.ConnectFuture, error) {
 	// url check
 	u, err := url.Parse(host)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	if (u.Scheme != "ws") && (u.Scheme != "wss") {
-		return nil
+		return nil, fmt.Errorf("malformed ws or wss URL")
 	}
 
 	newConn := NewConnection(self, self.GetFilterChain(), false, kind)
+	newConn.Host = host
 	future := base.NewConnectFuture(newConn)
 	self.ConnectBy(future, newConn, host)
-	return future
+	return future, nil
 }
 
 func (self *WSTransport) ConnectBy(future fairy.ConnectFuture, newConn *WSConnection, host string) {
@@ -119,39 +116,39 @@ func (self *WSTransport) ConnectBy(future fairy.ConnectFuture, newConn *WSConnec
 	}()
 }
 
-func (self *WSTransport) Start() {
-	self.wg.Add(1)
-}
-
-func (self *WSTransport) Stop() {
-	close(self.stopped)
-	self.wg.Done()
-	self.wg.Wait()
-}
-
-func (self *WSTransport) Wait() {
-	self.wg.Wait()
-}
-
-func (self *WSTransport) OnExit() {
-	self.Stop()
-}
-
-func (t *WSTransport) Reconnect(conn *WSConnection) {
-	// 断线重连
-	if t.CfgReconnectInterval == 0 {
-		t.ConnectBy(nil, conn, conn.Host)
-	} else {
-		fairy.StartTimer(int64(t.CfgReconnectInterval*1000), func(*fairy.Timer) {
-			t.ConnectBy(nil, conn, conn.Host)
-		})
-	}
-}
-
-func (t *WSTransport) HandleConnClose(conn *WSConnection) {
+func (t *WSTransport) TryReconnect(conn *WSConnection) bool {
 	if conn.IsClientSide() && t.IsNeedReconnect() {
-		t.Reconnect(conn)
-	} else {
-		// reomve conn??
+		// 断线重连
+		if t.CfgReconnectInterval == 0 {
+			t.ConnectBy(nil, conn, conn.Host)
+		} else {
+			fairy.StartTimer(int64(t.CfgReconnectInterval*1000), func(*fairy.Timer) {
+				t.ConnectBy(nil, conn, conn.Host)
+			})
+		}
+
+		return true
 	}
+
+	return false
+}
+
+func (t *WSTransport) Stop() {
+	// close all listener
+	for _, listener := range t.listeners {
+		listener.Close()
+	}
+
+	t.listeners = nil
+
+	// stop reconnect
+	t.CfgReconnectInterval = -1
+}
+
+func (t *WSTransport) Wait() {
+	t.wg.Wait()
+}
+
+func (t *WSTransport) OnExit() {
+	t.Stop()
 }

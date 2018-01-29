@@ -68,3 +68,7 @@ func (self *BaseTransport) AddFilters(filters ...fairy.Filter) {
 		self.filters.AddLast(filter)
 	}
 }
+
+func (self *BaseTransport) Start() {
+
+}

@@ -52,7 +52,7 @@ func (self *TcpConnection) Close() {
 			self.conn = nil
 			// try reconnect
 			trans := self.GetTransport().(*TcpTransport)
-			trans.HandleConnClose(self)
+			trans.TryReconnect(self)
 		}()
 	}
 }
