@@ -10,3 +10,7 @@ func GetRealType(obj interface{}) reflect.Type {
 		return rtype
 	}
 }
+
+func IsNil(obj interface{}) bool {
+	return reflect.ValueOf(obj).IsNil()
+}

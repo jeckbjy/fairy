@@ -45,9 +45,9 @@ func Exists(path string) bool {
 var gOnceMutex sync.Mutex
 
 func Once(inst interface{}, cb func()) {
-	if inst == nil {
+	if IsNil(inst) {
 		gOnceMutex.Lock()
-		if inst == nil {
+		if IsNil(inst) {
 			cb()
 		}
 		gOnceMutex.Unlock()
@@ -58,9 +58,9 @@ func Once(inst interface{}, cb func()) {
 var gOnceMutexEx sync.Mutex
 
 func OnceEx(inst interface{}, cb func()) {
-	if inst == nil {
+	if IsNil(inst) {
 		gOnceMutexEx.Lock()
-		if inst == nil {
+		if IsNil(inst) {
 			cb()
 		}
 		gOnceMutexEx.Unlock()

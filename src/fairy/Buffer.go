@@ -9,6 +9,8 @@ import (
 	"math"
 )
 
+var errNotFindLine = fmt.Errorf("err not find line!")
+
 func NewBuffer() *Buffer {
 	buffer := &Buffer{}
 	buffer.datas = list.New()
@@ -281,6 +283,34 @@ func (self *Buffer) Rewind() {
 	self.position = 0
 	self.element = self.datas.Front()
 	self.offset = 0
+}
+
+// \r\n
+func (self *Buffer) ReadLine() (*Buffer, error) {
+	delimiter := 1
+
+	pos := self.IndexOf("\n")
+	if pos == -1 {
+		return nil, errNotFindLine
+	}
+
+	if pos > 0 {
+		self.Seek(-1, io.SeekCurrent)
+		if ch, _ := self.ReadByte(); ch == '\r' {
+			delimiter = 2
+			pos -= 1
+			self.Seek(-1, io.SeekCurrent)
+		}
+	}
+
+	result := NewBuffer()
+	self.Seek(pos, io.SeekStart)
+	self.Split(result)
+
+	self.Seek(delimiter, io.SeekStart)
+	self.Discard()
+
+	return result, nil
 }
 
 func (self *Buffer) IndexOf(key string) int {

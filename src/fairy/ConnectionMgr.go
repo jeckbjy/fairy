@@ -70,7 +70,7 @@ func (self *ConnectionMgr) Close() {
 	self.mu.Unlock()
 }
 
-var gConnMgr *ConnectionMgr
+var gConnMgr *ConnectionMgr = nil
 
 func GetConnMgr() *ConnectionMgr {
 	util.Once(gConnMgr, func() {
