@@ -3,7 +3,6 @@ package filter
 import (
 	"fairy"
 	"fairy/base"
-	"fmt"
 	"strings"
 )
 
@@ -39,8 +38,8 @@ func (self *TelnetFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 		result, err := buffer.ReadLine()
 		if err == nil {
 			str := result.String()
-			fmt.Printf("%+v", str)
 			ctx.SetMessage(str)
+			// fmt.Printf("%+v", str)
 			// conn := ctx.GetConnection()
 			// conn.Send(str)
 		}
