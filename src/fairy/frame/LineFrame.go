@@ -1,9 +1,7 @@
 package frame
 
 import (
-	"errors"
 	"fairy"
-	"io"
 )
 
 func NewLineFrame() fairy.Frame {
@@ -27,33 +25,34 @@ func (self *LineFrame) Encode(buffer *fairy.Buffer) error {
 }
 
 func (self *LineFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) {
-	delimiterCount := 1
-	pos := buffer.IndexOf("\n")
-	if pos == -1 {
-		return nil, errors.New("donnot find delimiter!")
-	}
+	return buffer.ReadLine()
+	// delimiterCount := 1
+	// pos := buffer.IndexOf("\n")
+	// if pos == -1 {
+	// 	return nil, errors.New("donnot find delimiter!")
+	// }
 
-	// check \r
-	if pos > 0 {
-		buffer.Seek(-1, io.SeekCurrent)
-		if ch, _ := buffer.ReadByte(); ch == '\r' {
-			delimiterCount = 2
-			pos -= 1
-			buffer.Seek(-1, io.SeekCurrent)
-		}
-	}
+	// // check \r
+	// if pos > 0 {
+	// 	buffer.Seek(-1, io.SeekCurrent)
+	// 	if ch, _ := buffer.ReadByte(); ch == '\r' {
+	// 		delimiterCount = 2
+	// 		pos -= 1
+	// 		buffer.Seek(-1, io.SeekCurrent)
+	// 	}
+	// }
 
-	result := fairy.NewBuffer()
-	// read data
-	buffer.Seek(pos, io.SeekStart)
-	buffer.Split(result)
+	// result := fairy.NewBuffer()
+	// // read data
+	// buffer.Seek(pos, io.SeekStart)
+	// buffer.Split(result)
 
-	// remove demilter
-	buffer.Seek(delimiterCount, io.SeekStart)
-	buffer.Discard()
+	// // remove demilter
+	// buffer.Seek(delimiterCount, io.SeekStart)
+	// buffer.Discard()
 
 	// fairy.Debug("msgs:%+v", result.String())
 	// fairy.Debug("left:%+v", buffer.String())
 
-	return result, nil
+	// return result, nil
 }
