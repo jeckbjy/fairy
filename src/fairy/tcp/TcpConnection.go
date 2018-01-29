@@ -27,16 +27,9 @@ func (self *TcpConnection) Open(conn net.Conn) {
 		self.conn = conn
 		self.NewWriter()
 		self.NewReader()
+		fairy.GetConnMgr().Put(self)
 		go self.readThread()
 	}
-}
-
-func (self *TcpConnection) LocalAddr() net.Addr {
-	return self.conn.LocalAddr()
-}
-
-func (self *TcpConnection) RemoteAddr() net.Addr {
-	return self.conn.RemoteAddr()
 }
 
 func (self *TcpConnection) Close() {
@@ -50,6 +43,8 @@ func (self *TcpConnection) Close() {
 			self.wg.Wait()
 			self.SetState(fairy.ConnStateClosed)
 			self.conn = nil
+			// remove
+			fairy.GetConnMgr().Remove(self.GetConnId())
 			// try reconnect
 			trans := self.GetTransport().(*TcpTransport)
 			trans.TryReconnect(self)
@@ -103,4 +98,12 @@ func (self *TcpConnection) sendThread() {
 			break
 		}
 	}
+}
+
+func (self *TcpConnection) LocalAddr() net.Addr {
+	return self.conn.LocalAddr()
+}
+
+func (self *TcpConnection) RemoteAddr() net.Addr {
+	return self.conn.RemoteAddr()
 }

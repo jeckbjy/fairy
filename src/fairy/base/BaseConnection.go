@@ -34,6 +34,7 @@ func (self *BaseConnection) NewBase(transport fairy.Transport, filters fairy.Fil
 		self.side = SIDE_CLIENT
 	}
 	self.State = fairy.ConnStateClosed
+	self.connId = fairy.GetConnMgr().NewId(side)
 }
 
 func (self *BaseConnection) GetType() int {
