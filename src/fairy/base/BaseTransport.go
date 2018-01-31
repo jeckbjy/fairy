@@ -29,12 +29,16 @@ func (self *BaseTransport) NewBase() {
 	self.SetDefaultConfig()
 }
 
-func (self *BaseTransport) SetConfig(key *fairy.AttrKey, val string) {
+func (self *BaseTransport) SetConfig(key *fairy.AttrKey, val interface{}) {
 	switch key {
 	case fairy.KeyReconnectInterval:
-		util.SafeParseInt(&self.CfgReconnectInterval, val)
+		if ret, err := util.ConvInt(val); err == nil {
+			self.CfgReconnectInterval = ret
+		}
 	case fairy.KeyReaderBufferSize:
-		util.SafeParseInt(&self.CfgReaderBufferSize, val)
+		if ret, err := util.ConvInt(val); err == nil {
+			self.CfgReaderBufferSize = ret
+		}
 	default:
 		self.SetAttr(key, val)
 	}

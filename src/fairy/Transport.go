@@ -6,7 +6,7 @@ var (
 )
 
 type Transport interface {
-	SetConfig(key *AttrKey, val string)
+	SetConfig(key *AttrKey, val interface{})
 	GetConfig(key *AttrKey) interface{}
 	SetFilterChain(chain FilterChain)
 	AddFilters(filters ...Filter)

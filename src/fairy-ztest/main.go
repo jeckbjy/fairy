@@ -58,5 +58,6 @@ func TestTelnet() {
 }
 
 func main() {
-	TestTelnet()
+	TestFairy()
+	// TestTelnet()
 }
