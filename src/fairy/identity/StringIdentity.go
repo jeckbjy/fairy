@@ -3,65 +3,38 @@ package identity
 import (
 	"errors"
 	"fairy"
-	"fairy/base"
-	"io"
+	"fairy/packet"
 )
 
 func NewStringIdentity() *StringIdentity {
-	return NewStringIdentityEx(fairy.GetRegistry())
+	id := &StringIdentity{}
+	return id
 }
 
-func NewStringIdentityEx(registry *fairy.Registry) *StringIdentity {
-	identity := &StringIdentity{}
-	identity.Registry = registry
-	return identity
-}
-
-// name:body
+/**
+ * StringIdentity 冒号分隔消息头和消息体
+ */
 type StringIdentity struct {
-	*fairy.Registry
 }
 
 func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
-	pos := buffer.IndexOf(":")
-	if pos == -1 {
-		return nil, nil
-	}
-
-	// read name
-	data := make([]byte, pos)
-	if _, err := buffer.Read(data); err != nil {
+	name, err := buffer.ReadUntil(':')
+	if err != nil {
 		return nil, err
 	}
 
-	name := string(data)
-
-	// remove ":"
-	buffer.Seek(1, io.SeekCurrent)
-	buffer.Discard()
-
-	// create packet
-	packet := base.NewBasePacket()
-	packet.SetName(name)
-
-	// create message
-	msg := self.CreateByName(name)
-	if msg == nil {
-		return packet, nil
-	}
-
-	packet.SetMessage(msg)
-	return packet, nil
+	pkt := packet.NewBasePacket()
+	pkt.SetName(string(name))
+	return pkt, nil
 }
 
 func (self *StringIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
-	name := ""
-	if packet, ok := data.(fairy.Packet); ok {
-		name = packet.GetName()
-	} else {
-		name = self.GetName(data)
+	pkt, ok := data.(fairy.Packet)
+	if !ok {
+		return errors.New("StringString encode must packet!")
 	}
 
+	name := pkt.GetName()
 	if name == "" {
 		return errors.New("StringIdentity:cannot find name!")
 	}

@@ -117,6 +117,16 @@ func (self *Registry) Remove(msg interface{}) bool {
 	return false
 }
 
+func (self *Registry) GetInfo(msg interface{}) (uint, string) {
+	msgType := util.GetRealType(msg)
+	info, ok := self.typeMap[msgType]
+	if ok {
+		return info.Id, info.Name
+	}
+
+	return 0, ""
+}
+
 func (self *Registry) GetName(msg interface{}) string {
 	msgType := util.GetRealType(msg)
 	info, ok := self.typeMap[msgType]
@@ -135,6 +145,14 @@ func (self *Registry) GetId(msg interface{}) uint {
 	}
 
 	return 0
+}
+
+func (self *Registry) Create(id uint, name string) interface{} {
+	if id == 0 {
+		return self.CreateByName(name)
+	} else {
+		return self.CreateById(id)
+	}
 }
 
 func (self *Registry) CreateByName(name string) interface{} {

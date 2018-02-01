@@ -2,7 +2,7 @@ package identity
 
 import (
 	"fairy"
-	"fairy/base"
+	"fairy/packet"
 	"fairy/util"
 	"fmt"
 	"io"
@@ -10,20 +10,19 @@ import (
 )
 
 func NewIntegerIdentity() *IntegerIdentity {
-	return NewIntegerIdentityEx(fairy.GetRegistry(), true)
+	return NewIntegerIdentityEx(true)
 }
 
-func NewIntegerIdentityEx(registry *fairy.Registry, littleEndian bool) *IntegerIdentity {
+func NewIntegerIdentityEx(littleEndian bool) *IntegerIdentity {
 	identity := &IntegerIdentity{}
-	identity.Registry = registry
 	identity.littleEndian = littleEndian
 	return identity
 }
 
-// 使用uint16保存消息ID，区分大小端，要求消息ID不能为0
-// encode如果不是packet
+/**
+ * 使用uint16保存消息ID，区分大小端，要求消息ID不能为0
+ */
 type IntegerIdentity struct {
-	*fairy.Registry
 	littleEndian bool
 }
 
@@ -34,6 +33,9 @@ func (self *IntegerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) 
 		return nil, err
 	}
 
+	// 不要删除数据,将来可能还要用
+	// buffer.Discard()
+
 	// 解析ID
 	id := uint(util.GetUint16(data, self.littleEndian))
 	if id == 0 {
@@ -41,39 +43,30 @@ func (self *IntegerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) 
 	}
 
 	// create packet
-	packet := base.NewBasePacket()
-	packet.SetId(id)
+	pkt := packet.NewBasePacket()
+	pkt.SetId(id)
 
-	// create message
-	msg := self.CreateById(id)
-	if msg == nil {
-		return packet, fmt.Errorf("IntegerIdentity: create message fail,msgid=%v!", id)
-	}
-	packet.SetMessage(msg)
-	return packet, nil
+	return pkt, nil
 }
 
 func (self *IntegerIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
-	id := uint(0)
-	if packet, ok := data.(fairy.Packet); ok {
-		id = packet.GetId()
+	pkt, ok := data.(fairy.Packet)
+	if !ok {
+		return fmt.Errorf("IntegerIdentity encode must be packet")
 	}
 
+	id := pkt.GetId()
 	if id == 0 {
-		id = self.GetId(data)
-	}
-
-	if id == 0 {
-		return fmt.Errorf("IntegerIdentity:cannot find msgid!")
+		return fmt.Errorf("IntegerIdentity encode id cannot zero!")
 	}
 
 	if id >= math.MaxUint16 {
-		return fmt.Errorf("IntegerIdentity:msgid overflow!")
+		return fmt.Errorf("IntegerIdentity encode id[%v] overflow!", id)
 	}
 
-	id_buff := make([]byte, 2)
-	util.PutUint16(id_buff, uint16(id), self.littleEndian)
-	buffer.Append(id_buff)
+	buff := make([]byte, 2)
+	util.PutUint16(buff, uint16(id), self.littleEndian)
+	buffer.Append(buff)
 
 	return nil
 }

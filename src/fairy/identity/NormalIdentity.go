@@ -6,12 +6,17 @@ import (
 	"fmt"
 )
 
-// for server packet
-type ServerIdentity struct {
+func NewNormal() *NormalIdentity {
+	identity := &NormalIdentity{}
+	return identity
 }
 
-func (self *ServerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
-	pkt := packet.NewServer()
+// for normal packet
+type NormalIdentity struct {
+}
+
+func (self *NormalIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
+	pkt := packet.NewNormal()
 	if err := pkt.Decode(buffer); err != nil {
 		return nil, err
 	}
@@ -19,7 +24,7 @@ func (self *ServerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
 	return nil, nil
 }
 
-func (self *ServerIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
+func (self *NormalIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
 	if pkt, ok := data.(*packet.NormalPacket); ok {
 		return pkt.Encode(buffer)
 	}

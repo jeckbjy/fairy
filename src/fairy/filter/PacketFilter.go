@@ -3,6 +3,7 @@ package filter
 import (
 	"fairy"
 	"fairy/base"
+	"fairy/packet"
 )
 
 func NewPacketFilter(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
@@ -12,57 +13,91 @@ func NewPacketFilter(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
 	return filter
 }
 
+// decode:identity->UncaughtHandler->codec->dispatcher
 type PacketFilter struct {
 	base.BaseFilter
 	fairy.Identity
 	fairy.Codec
+	*fairy.Registry
+	*fairy.Dispatcher
 }
 
 func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	// create buffer
 	data := ctx.GetMessage()
-	if buffer, ok := data.(*fairy.Buffer); ok {
-		packet, err := self.Identity.Decode(buffer)
-		if err != nil {
-			return ctx.GetStopAction()
-		}
-
-		if packet == nil {
-			return ctx.GetNextAction()
-		}
-
-		err = self.Codec.Decode(packet.GetMessage(), buffer)
-		if err != nil {
-			return ctx.GetStopAction()
-		}
-		// 透传下一个执行
-		ctx.SetMessage(packet)
+	buffer, ok := data.(*fairy.Buffer)
+	if !ok {
+		return ctx.GetNextAction()
 	}
 
+	pkt, err := self.Identity.Decode(buffer)
+	if err != nil {
+		// throw error??
+		return ctx.GetStopAction()
+	}
+
+	if pkt == nil {
+		return ctx.GetNextAction()
+	}
+
+	// UncaughtHandler, donot need codec
+	handler := self.Dispatcher.GetHandler(pkt.GetId(), pkt.GetName())
+	if handler == nil {
+		uncaught := self.Dispatcher.GetUncaughtHandler()
+		ctx.SetHandler(uncaught)
+		return ctx.GetNextAction()
+	}
+
+	// create msg
+	msg := self.Registry.Create(pkt.GetId(), pkt.GetName())
+	if msg == nil {
+		return ctx.GetNextAction()
+	}
+
+	// codec
+	err = self.Codec.Decode(msg, buffer)
+	if err != nil {
+		return ctx.GetStopAction()
+	}
+
+	ctx.SetMessage(pkt)
+	ctx.SetHandler(handler)
 	return ctx.GetNextAction()
 }
 
 func (self *PacketFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
-	message := ctx.GetMessage()
-	if _, ok := message.(*fairy.Buffer); ok {
+	data := ctx.GetMessage()
+	if _, ok := data.(*fairy.Buffer); ok {
 		// 已经是buffer，无需编码
 		return ctx.GetNextAction()
 	}
 
 	buffer := fairy.NewBuffer()
 
-	// 先写入头部信息:内部需要支持两种形式，packet or message
-	if err := self.Identity.Encode(buffer, message); err != nil {
+	var pkt fairy.Packet
+	var msg interface{}
+	var ok bool
+
+	pkt, ok = data.(fairy.Packet)
+	if ok {
+		msg = pkt.GetMessage()
+	} else {
+		id, name := self.Registry.GetInfo(data)
+		pkt = &packet.BasePacket{}
+		pkt.SetId(id)
+		pkt.SetName(name)
+		msg = data
+	}
+
+	// 写入头信息
+	if err := self.Identity.Encode(buffer, pkt); err != nil {
+		// throw error
 		return ctx.GetStopAction()
 	}
 
-	// 写需要支持两种，packet或者message
-	if packet, ok := message.(fairy.Packet); ok {
-		message = packet.GetMessage()
-	}
-
 	// 写入消息体
-	if err := self.Codec.Encode(message, buffer); err != nil {
+	if err := self.Codec.Encode(msg, buffer); err != nil {
+		// throw error
 		return ctx.GetStopAction()
 	}
 

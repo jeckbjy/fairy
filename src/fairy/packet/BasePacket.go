@@ -1,6 +1,8 @@
-package base
+package packet
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func NewBasePacket() *BasePacket {
 	packet := &BasePacket{}
@@ -14,6 +16,7 @@ type BasePacket struct {
 	result   uint
 	serialId uint
 	time     uint
+	checksum uint64
 }
 
 func (self *BasePacket) GetId() uint {
@@ -65,4 +68,12 @@ func (self *BasePacket) GetTime() uint {
 
 func (self *BasePacket) SetTime(t uint) {
 	self.time = t
+}
+
+func (self *BasePacket) SetChecksum(v uint64) {
+	self.checksum = v
+}
+
+func (self *BasePacket) GetChecksum() uint64 {
+	return self.checksum
 }

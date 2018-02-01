@@ -2,7 +2,6 @@ package base
 
 import (
 	"fairy"
-	"net"
 )
 
 func NewContext(filterChain fairy.FilterChain, conn fairy.Connection) *BaseFilterContext {
@@ -17,6 +16,7 @@ type BaseFilterContext struct {
 	filterChain fairy.FilterChain
 	conn        fairy.Connection
 	message     interface{}
+	handler     fairy.Handler
 	err         error
 }
 
@@ -36,16 +36,20 @@ func (self *BaseFilterContext) GetBuffer() *fairy.Buffer {
 	return nil
 }
 
-func (self *BaseFilterContext) GetAddress() net.Addr {
-	return nil
-}
-
 func (self *BaseFilterContext) GetError() error {
 	return self.err
 }
 
 func (self *BaseFilterContext) SetError(err error) {
 	self.err = err
+}
+
+func (self *BaseFilterContext) SetHandler(handler fairy.Handler) {
+	self.handler = handler
+}
+
+func (self *BaseFilterContext) GetHandler() fairy.Handler {
+	return self.handler
 }
 
 func (self *BaseFilterContext) GetStopAction() fairy.FilterAction {

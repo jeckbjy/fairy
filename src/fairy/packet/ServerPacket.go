@@ -2,21 +2,25 @@ package packet
 
 import (
 	"fairy"
-	"fairy/base"
 )
+
+func NewServer() *ServerPacket {
+	pkt := &ServerPacket{}
+	return pkt
+}
 
 // 服务器内部通信用Packet
 type ServerPacket struct {
-	base.BasePacket
+	NormalPacket
 	Host string
 	Uid  uint64
 	Mode uint
 }
 
-func EncodeServerPacket(buffer *fairy.Buffer, packet *ServerPacket) {
-
+func (self *ServerPacket) Encode(buffer *fairy.Buffer) error {
+	return nil
 }
 
-func DecodeServerPacket(buffer *fairy.Buffer, packet *ServerPacket) {
-
+func (self *ServerPacket) Decode(buffer *fairy.Buffer) error {
+	return nil
 }

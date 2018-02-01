@@ -285,34 +285,6 @@ func (self *Buffer) Rewind() {
 	self.offset = 0
 }
 
-// \r\n
-func (self *Buffer) ReadLine() (*Buffer, error) {
-	delimiter := 1
-
-	pos := self.IndexOf("\n")
-	if pos == -1 {
-		return nil, errNotFindLine
-	}
-
-	if pos > 0 {
-		self.Seek(-1, io.SeekCurrent)
-		if ch, _ := self.ReadByte(); ch == '\r' {
-			delimiter = 2
-			pos -= 1
-			self.Seek(-1, io.SeekCurrent)
-		}
-	}
-
-	result := NewBuffer()
-	self.Seek(pos, io.SeekStart)
-	self.Split(result)
-
-	self.Seek(delimiter, io.SeekStart)
-	self.Discard()
-
-	return result, nil
-}
-
 func (self *Buffer) IndexOf(key string) int {
 	return self.IndexOfLimit(key, -1)
 }
@@ -479,6 +451,53 @@ func (self *Buffer) ReadByte() (byte, error) {
 	self.Seek(1, io.SeekCurrent)
 	data := self.element.Value.([]byte)
 	return data[self.offset], nil
+}
+
+// read until key and remove key
+func (self *Buffer) ReadUntil(key byte) (string, error) {
+	if self.position == self.length {
+		return "", errors.New("not find")
+	}
+
+	self.checkCursor()
+	index := self.findByte(key, -1)
+	if index == -1 {
+		return "", errors.New("not find")
+	}
+
+	data := make([]byte, index)
+	self.Read(data)
+	// remove key
+	self.Seek(1, io.SeekCurrent)
+	return string(data), nil
+}
+
+// \r\n
+func (self *Buffer) ReadLine() (*Buffer, error) {
+	delimiter := 1
+
+	pos := self.IndexOf("\n")
+	if pos == -1 {
+		return nil, errNotFindLine
+	}
+
+	if pos > 0 {
+		self.Seek(-1, io.SeekCurrent)
+		if ch, _ := self.ReadByte(); ch == '\r' {
+			delimiter = 2
+			pos -= 1
+			self.Seek(-1, io.SeekCurrent)
+		}
+	}
+
+	result := NewBuffer()
+	self.Seek(pos, io.SeekStart)
+	self.Split(result)
+
+	self.Seek(delimiter, io.SeekStart)
+	self.Discard()
+
+	return result, nil
 }
 
 func (self *Buffer) checkCursor() {
