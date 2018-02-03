@@ -11,16 +11,42 @@ func NewServer() *ServerPacket {
 
 // 服务器内部通信用Packet
 type ServerPacket struct {
-	NormalPacket
-	Host string
-	Uid  uint64
+	BasePacket
 	Mode uint
+	Uid  uint64
+	Host string
 }
 
-func (self *ServerPacket) Encode(buffer *fairy.Buffer) error {
+func EncodeServer(pkt *ServerPacket, buffer *fairy.Buffer) error {
+	writer := NewWriter(buffer)
+	writer.PutId(pkt.GetId())
+	writer.PutUint(pkt.Mode)
+	writer.PutUint64(pkt.Uid)
+	writer.PutStr(pkt.Host)
+	writer.Flush()
 	return nil
 }
 
-func (self *ServerPacket) Decode(buffer *fairy.Buffer) error {
+func DecodeServer(pkt *ServerPacket, buffer *fairy.Buffer) error {
+	reader := NewReader(buffer)
+	var err error
+	var id uint
+	if id, err = reader.GetId(); err != nil {
+		return err
+	}
+	pkt.SetId(id)
+
+	if pkt.Mode, err = reader.GetUint(); err != nil {
+		return err
+	}
+
+	if pkt.Uid, err = reader.GetUint64(); err != nil {
+		return err
+	}
+
+	if pkt.Host, err = reader.GetStr(); err != nil {
+		return err
+	}
+
 	return nil
 }

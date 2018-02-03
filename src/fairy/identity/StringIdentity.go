@@ -17,17 +17,6 @@ func NewStringIdentity() *StringIdentity {
 type StringIdentity struct {
 }
 
-func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
-	name, err := buffer.ReadUntil(':')
-	if err != nil {
-		return nil, err
-	}
-
-	pkt := packet.NewBasePacket()
-	pkt.SetName(string(name))
-	return pkt, nil
-}
-
 func (self *StringIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
 	pkt, ok := data.(fairy.Packet)
 	if !ok {
@@ -43,4 +32,15 @@ func (self *StringIdentity) Encode(buffer *fairy.Buffer, data interface{}) error
 	buffer.Append([]byte(":"))
 
 	return nil
+}
+
+func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
+	name, err := buffer.ReadUntil(':')
+	if err != nil {
+		return nil, err
+	}
+
+	pkt := packet.NewBasePacket()
+	pkt.SetName(string(name))
+	return pkt, nil
 }

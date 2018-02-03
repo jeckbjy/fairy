@@ -4,35 +4,26 @@ import (
 	"fairy"
 )
 
-func NewNormal() *NormalPacket {
-	pkt := &NormalPacket{}
+func NewNormal() *BasePacket {
+	pkt := &BasePacket{}
 	return pkt
 }
 
-type NormalPacket struct {
-	BasePacket
-}
-
-func (self *NormalPacket) Encode(buffer *fairy.Buffer) error {
+func EncodeNormal(pkt *BasePacket, buffer *fairy.Buffer) error {
+	writer := NewWriter(buffer)
+	writer.PutId(pkt.GetId())
+	// TODO:others rpc
+	writer.Flush()
 	return nil
 }
 
-func (self *NormalPacket) Decode(buffer *fairy.Buffer) error {
+func DecodeNormal(pkt *BasePacket, buffer *fairy.Buffer) error {
+	reader := NewReader(buffer)
+	id, err := reader.GetId()
+	if err != nil {
+		return err
+	}
+	pkt.SetId(id)
+	// TODO:others rpc
 	return nil
 }
-
-// func EncodeNormalPacket(buffer *fairy.Buffer, packet *base.BasePacket) {
-// 	codec := Codec{}
-// 	codec.CreateReader(buffer)
-// 	packet.SetResult(codec.ReadUInt())
-// 	packet.SetSerialId(codec.ReadUInt())
-// 	packet.SetId(codec.ReadUInt())
-// }
-
-// func DecodeNormalPacket(buffer *fairy.Buffer, packet *base.BasePacket) {
-// 	codec := Codec{}
-// 	codec.CreateWriter(buffer)
-// 	codec.PushUInt(packet.GetResult())
-// 	codec.PushUInt(packet.GetSerialId())
-// 	codec.PushUInt(packet.GetId())
-// }

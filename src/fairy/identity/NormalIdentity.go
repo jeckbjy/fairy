@@ -15,24 +15,19 @@ func NewNormal() *NormalIdentity {
 type NormalIdentity struct {
 }
 
+func (self *NormalIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
+	if pkt, ok := data.(*packet.BasePacket); ok {
+		return packet.EncodeNormal(pkt, buffer)
+	}
+
+	return fmt.Errorf("encode must be BasePacket")
+}
+
 func (self *NormalIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
 	pkt := packet.NewNormal()
-	if err := pkt.Decode(buffer); err != nil {
+	if err := packet.DecodeNormal(pkt, buffer); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
-}
-
-func (self *NormalIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
-	if pkt, ok := data.(*packet.NormalPacket); ok {
-		return pkt.Encode(buffer)
-	}
-
-	// integer
-	// if pkt, ok := data.(*packet.BasePacket); ok {
-
-	// }
-
-	return fmt.Errorf("encode must be NormalPacket")
+	return pkt, nil
 }

@@ -10,24 +10,24 @@ import (
 type ServerIdentity struct {
 }
 
+func (self *ServerIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
+	switch data.(type) {
+	case *packet.BasePacket:
+		return packet.EncodeNormal(data.(*packet.BasePacket), buffer)
+	case *packet.ServerPacket:
+		return packet.EncodeServer(data.(*packet.ServerPacket), buffer)
+	default:
+		return fmt.Errorf("encode must be ServerPacket")
+	}
+
+	return fmt.Errorf("encode must be NormalPacket")
+}
+
 func (self *ServerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
 	pkt := packet.NewServer()
-	if err := pkt.Decode(buffer); err != nil {
+	if err := packet.DecodeServer(pkt, buffer); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
-}
-
-func (self *ServerIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
-	if pkt, ok := data.(*packet.NormalPacket); ok {
-		return pkt.Encode(buffer)
-	}
-
-	// integer
-	// if pkt, ok := data.(*packet.BasePacket); ok {
-
-	// }
-
-	return fmt.Errorf("encode must be NormalPacket")
+	return pkt, nil
 }
