@@ -3,7 +3,6 @@ package fairy
 import (
 	"bytes"
 	"container/list"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -360,7 +359,7 @@ func (self *Buffer) match(elem *list.Element, offset int, key string) bool {
 func (self *Buffer) Peek(buffer []byte) (int, error) {
 	length := len(buffer)
 	if self.position+length > self.length {
-		return 0, errors.New("Buffer.Read overflow!")
+		return 0, fmt.Errorf("Buffer.Read overflow!")
 	}
 
 	self.checkCursor()
@@ -376,7 +375,7 @@ func (self *Buffer) Peek(buffer []byte) (int, error) {
 func (self *Buffer) Read(buffer []byte) (int, error) {
 	length := len(buffer)
 	if self.position+length > self.length {
-		return 0, errors.New("Buffer.Read overflow!")
+		return 0, fmt.Errorf("Buffer.Read overflow!")
 	}
 
 	self.checkCursor()
@@ -400,7 +399,7 @@ func (self *Buffer) Write(bufffer []byte) (int, error) {
 	length := len(bufffer)
 	count := self.position + length - self.length
 	if count > 0 {
-		return 0, errors.New("Buffer.write overflow!")
+		return 0, fmt.Errorf("Buffer.write overflow!")
 	}
 
 	iter := Iterator{}
@@ -427,7 +426,7 @@ func (self *Buffer) SendAll(writer io.Writer) error {
 	return nil
 }
 
-func (self *Buffer) ToBytes() []byte {
+func (self *Buffer) Bytes() []byte {
 	if self.length <= 0 {
 		return nil
 	}
@@ -436,14 +435,32 @@ func (self *Buffer) ToBytes() []byte {
 }
 
 func (self *Buffer) String() string {
-	data := self.ToBytes()
+	if self.length <= 0 {
+		return ""
+	}
+	self.Concat()
+	data := self.datas.Front().Value.([]byte)
 	return string(data)
+}
+
+func (self *Buffer) ReadToEnd() []byte {
+	if self.length == 0 {
+		return nil
+	}
+
+	self.Concat()
+	data := self.datas.Front().Value.([]byte)
+	if self.position == 0 {
+		return data
+	} else {
+		return data[self.position:]
+	}
 }
 
 // for io.ByteReader
 func (self *Buffer) ReadByte() (byte, error) {
 	if self.position >= self.length {
-		return 0, errors.New("ReadByte overflow!")
+		return 0, fmt.Errorf("ReadByte overflow!")
 	}
 
 	self.checkCursor()
@@ -456,13 +473,13 @@ func (self *Buffer) ReadByte() (byte, error) {
 // read until key and remove key
 func (self *Buffer) ReadUntil(key byte) (string, error) {
 	if self.position == self.length {
-		return "", errors.New("not find")
+		return "", fmt.Errorf("buffer end,cannot find key=%+v", key)
 	}
 
 	self.checkCursor()
 	index := self.findByte(key, -1)
 	if index == -1 {
-		return "", errors.New("not find")
+		return "", fmt.Errorf("cannot find key=%+v", key)
 	}
 
 	data := make([]byte, index)

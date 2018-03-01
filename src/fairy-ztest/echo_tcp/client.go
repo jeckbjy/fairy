@@ -56,6 +56,7 @@ func StartClient() {
 	transport := tcp.NewTransport()
 	transport.AddFilters(
 		filter.NewTransportFilter(),
+		filter.NewLogFilter(),
 		filter.NewFrameFilter(frame.NewLineFrame()),
 		filter.NewPacketFilter(identity.NewStringIdentity(), codec.NewJsonCodec()),
 		filter.NewExecutorFilter(),

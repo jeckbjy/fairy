@@ -20,7 +20,7 @@ type StringIdentity struct {
 func (self *StringIdentity) Encode(buffer *fairy.Buffer, data interface{}) error {
 	pkt, ok := data.(fairy.Packet)
 	if !ok {
-		return errors.New("StringString encode must packet!")
+		return errors.New("StringIdentity encode must be packet!")
 	}
 
 	name := pkt.GetName()

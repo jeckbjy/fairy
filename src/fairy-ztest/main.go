@@ -11,7 +11,7 @@ import (
 )
 
 func TestFairy() {
-	mode_ptr := flag.String("m", "client-ws", "server mode")
+	mode_ptr := flag.String("m", "server", "server mode")
 	flag.Parse()
 	mode := *mode_ptr
 

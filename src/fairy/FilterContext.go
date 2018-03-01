@@ -7,6 +7,8 @@ type FilterContext interface {
 	GetMessage() interface{}
 	GetHandler() Handler
 	SetHandler(handler Handler)
+	GetError() error
+	ThrowError(err error)
 	GetStopAction() FilterAction
 	GetNextAction() FilterAction
 	GetLastAction() FilterAction

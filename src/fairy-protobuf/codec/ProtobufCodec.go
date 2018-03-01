@@ -26,7 +26,7 @@ func (self *ProtobufCodec) Encode(obj interface{}, buffer *fairy.Buffer) error {
 }
 
 func (self *ProtobufCodec) Decode(obj interface{}, buffer *fairy.Buffer) error {
-	data := buffer.ToBytes()
+	data := buffer.ReadToEnd()
 	msg := obj.(proto.Message)
 	return proto.Unmarshal(data, msg)
 }

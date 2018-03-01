@@ -51,6 +51,7 @@ func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 	if self.Executor != nil {
 		self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
 	} else {
+		defer fairy.Catch()
 		handler.Invoke(conn, packet)
 	}
 

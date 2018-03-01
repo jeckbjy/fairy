@@ -26,7 +26,7 @@ func (self *FuncEvent) Process() {
 // TimerEvent
 ////////////////////////////////////////////////////////////
 func NewTimerEvent(e *TimerEngine) *TimerEvent {
-	ev := &TimerEvent{engine:e}
+	ev := &TimerEvent{engine: e}
 	return ev
 }
 
@@ -53,5 +53,6 @@ type PacketEvent struct {
 }
 
 func (self *PacketEvent) Process() {
+	defer Catch()
 	self.handler.Invoke(self.conn, self.packet)
 }

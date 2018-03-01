@@ -44,6 +44,11 @@ func (self *BaseFilterContext) SetError(err error) {
 	self.err = err
 }
 
+func (self *BaseFilterContext) ThrowError(err error) {
+	self.err = err
+	self.filterChain.HandleError(self.conn, err)
+}
+
 func (self *BaseFilterContext) SetHandler(handler fairy.Handler) {
 	self.handler = handler
 }

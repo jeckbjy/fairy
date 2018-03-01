@@ -10,6 +10,8 @@ func NewPacketFilter(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
 	filter := &PacketFilter{}
 	filter.Identity = identity
 	filter.Codec = codec
+	filter.Registry = fairy.GetRegistry()
+	filter.Dispatcher = fairy.GetDispatcher()
 	return filter
 }
 
@@ -32,7 +34,7 @@ func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 
 	pkt, err := self.Identity.Decode(buffer)
 	if err != nil {
-		// throw error??
+		ctx.ThrowError(err)
 		return ctx.GetStopAction()
 	}
 
@@ -57,8 +59,11 @@ func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 	// codec
 	err = self.Codec.Decode(msg, buffer)
 	if err != nil {
+		ctx.ThrowError(err)
 		return ctx.GetStopAction()
 	}
+
+	pkt.SetMessage(msg)
 
 	ctx.SetMessage(pkt)
 	ctx.SetHandler(handler)

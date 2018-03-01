@@ -24,6 +24,6 @@ func (self *JsonCodec) Encode(msg interface{}, buffer *fairy.Buffer) error {
 }
 
 func (self *JsonCodec) Decode(msg interface{}, buffer *fairy.Buffer) error {
-	data := buffer.ToBytes()
+	data := buffer.ReadToEnd()
 	return json.Unmarshal(data, msg)
 }

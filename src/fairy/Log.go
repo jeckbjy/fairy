@@ -1,6 +1,9 @@
 package fairy
 
-import "fairy/log"
+import (
+	"fairy/log"
+	"fairy/util"
+)
 
 func GetLogger() *log.Logger {
 	logger := log.GetLogger()
@@ -30,4 +33,11 @@ func Error(format string, args ...interface{}) {
 
 func Fatal(format string, args ...interface{}) {
 	GetLogger().Write(log.LEVEL_FATAL, format, args...)
+}
+
+func Catch() {
+	if err := recover(); err != nil {
+		Error("%+v", err)
+		Error("%+v", util.GetStackTrace())
+	}
 }
