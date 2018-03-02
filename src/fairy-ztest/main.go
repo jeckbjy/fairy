@@ -2,8 +2,7 @@ package main
 
 import (
 	"bufio"
-	"fairy-ztest/echo_tcp"
-	"fairy-ztest/echo_ws"
+	"fairy-ztest/echo"
 	"flag"
 	"fmt"
 	"net"
@@ -11,19 +10,15 @@ import (
 )
 
 func TestFairy() {
-	mode_ptr := flag.String("m", "server", "server mode")
+	pside := flag.String("s", "server", "server or client side")
+	pnetmode := flag.String("n", "ws", "network mode,tcp,ws,kcp")
+	pmsgmode := flag.String("m", "json", "proto mode,json,protobuf,sproto,bson")
 	flag.Parse()
-	mode := *mode_ptr
 
-	switch mode {
-	case "server":
-		echo_tcp.StartServer()
-	case "client":
-		echo_tcp.StartClient()
-	case "server-ws":
-		echo_ws.StartServer()
-	case "client-ws":
-		echo_ws.StartClient()
+	if *pside == "server" {
+		echo.StartServer(*pnetmode, *pmsgmode)
+	} else {
+		echo.StartClient(*pnetmode, *pmsgmode)
 	}
 }
 

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package echo;
+
+message PEchoMsg
+{
+    string info = 1;
+    int64 timestamp = 2;
+}

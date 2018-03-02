@@ -1,5 +1,0 @@
-package trie
-
-func NewDATrie() {
-
-}
