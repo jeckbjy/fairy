@@ -1,3 +1,3 @@
 #!/bin/bash
 
-protoc --go_out=../echo *.proto
+protoc --go_out=../echo/pb *.proto

@@ -24,6 +24,8 @@ func (self *VarintLengthFrame) Encode(buffer *fairy.Buffer) error {
 }
 
 func (self *VarintLengthFrame) Decode(buffer *fairy.Buffer) (*fairy.Buffer, error) {
+	// tmp := buffer.Bytes()
+	// fairy.Debug("%+v", tmp)
 	size, err := binary.ReadUvarint(buffer)
 	if err != nil {
 		return nil, err

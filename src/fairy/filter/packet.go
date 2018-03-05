@@ -97,12 +97,14 @@ func (self *PacketFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterActio
 	// 写入头信息
 	if err := self.Identity.Encode(buffer, pkt); err != nil {
 		// throw error
+		ctx.ThrowError(err)
 		return ctx.GetStopAction()
 	}
 
 	// 写入消息体
 	if err := self.Codec.Encode(msg, buffer); err != nil {
 		// throw error
+		ctx.ThrowError(err)
 		return ctx.GetStopAction()
 	}
 

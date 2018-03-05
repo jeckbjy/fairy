@@ -24,12 +24,9 @@ func NewRegistry() *Registry {
 	return registry
 }
 
-func RegisterMessage(msg interface{}) {
-	GetRegistry().Register(msg)
-}
-
-func RegisterMessageEx(msg interface{}, msgId uint) {
-	GetRegistry().RegisterId(msg, msgId)
+// 注册消息
+func RegisterMessage(msg interface{}, args ...interface{}) {
+	GetRegistry().Register(msg, args...)
 }
 
 // 消息元信息
@@ -54,18 +51,39 @@ type Registry struct {
 	typeMap TypeMap
 }
 
-func (self *Registry) Register(msg interface{}) error {
+func (self *Registry) Register(msg interface{}, args ...interface{}) error {
+	if len(args) == 0 {
+		return self.RegisterByName(msg, "")
+	}
+
+	if val, ok := args[0].(string); ok {
+		return self.RegisterByName(msg, val)
+	}
+
+	id, err := util.ConvUint(args[0])
+	if err != nil {
+		return err
+	}
+
+	return self.RegisterById(msg, id)
+}
+
+func (self *Registry) RegisterByName(msg interface{}, msgName string) error {
 	msgType := util.GetRealType(msg)
-	msgName := msgType.Name()
+
+	if msgName == "" {
+		msgName = msgType.Name()
+	}
+
 	if _, ok := self.typeMap[msgType]; ok {
-		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgType.Name())
+		return fmt.Errorf("msg_type has registered![msg_name=%s]", msgName)
 	}
 
 	if _, ok := self.nameMap[msgName]; ok {
-		return fmt.Errorf("msg_name has registered![msg_name=%s]", msgType.Name())
+		return fmt.Errorf("msg_name has registered![msg_name=%s]", msgName)
 	}
 
-	info := &MsgInfo{Id: 0, Name: msgType.Name(), Type: msgType}
+	info := &MsgInfo{Id: 0, Name: msgName, Type: msgType}
 
 	self.typeMap[msgType] = info
 	self.nameMap[msgName] = info
@@ -73,7 +91,7 @@ func (self *Registry) Register(msg interface{}) error {
 	return nil
 }
 
-func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
+func (self *Registry) RegisterById(msg interface{}, msgId uint) error {
 	msgType := util.GetRealType(msg)
 	msgName := msgType.Name()
 
@@ -93,7 +111,7 @@ func (self *Registry) RegisterId(msg interface{}, msgId uint) error {
 		return fmt.Errorf("msg_id has registered![msg_name=%s, msg_id=%v]", msgName, msgId)
 	}
 
-	info := &MsgInfo{Id: msgId, Name: msgType.Name(), Type: msgType}
+	info := &MsgInfo{Id: msgId, Name: msgName, Type: msgType}
 	self.typeMap[msgType] = info
 	self.nameMap[msgName] = info
 	self.idMap[msgId] = info

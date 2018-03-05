@@ -78,14 +78,17 @@ type Dispatcher struct {
 	uncaught Handler
 }
 
+/**
+ * key:int,uint，string或者类，数字代表id查找，字符串或者类代表用名字查找
+ */
 func (self *Dispatcher) Regsiter(key interface{}, handler Handler) {
 	switch key.(type) {
-	case string:
-		self.RegisterByName(key.(string), handler)
 	case int:
-		self.RegistryById(key.(uint), handler)
+		self.RegistryById(uint(key.(int)), handler)
 	case uint:
 		self.RegistryById(key.(uint), handler)
+	case string:
+		self.RegisterByName(key.(string), handler)
 	default:
 		// must be struct!!!
 		// example:Register(&LoginReq{}, handler) or Register(LoginReq{}, handler)

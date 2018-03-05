@@ -14,18 +14,18 @@ type LogFilter struct {
 }
 
 func (self *LogFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
-	// buffer, ok := ctx.GetMessage().(*fairy.Buffer)
-	// if ok {
-	// 	fairy.Debug("read data:%+v", buffer.String())
-	// }
+	buffer, ok := ctx.GetMessage().(*fairy.Buffer)
+	if ok {
+		fairy.Debug("read data:len=%+v", buffer.Length())
+	}
 	return ctx.GetNextAction()
 }
 
 func (self *LogFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
-	// buffer, ok := ctx.GetMessage().(*fairy.Buffer)
-	// if ok {
-	// 	fairy.Debug("send data:%+v", buffer.String())
-	// }
+	buffer, ok := ctx.GetMessage().(*fairy.Buffer)
+	if ok {
+		fairy.Debug("send data:len=%+v", buffer.Length())
+	}
 
 	return ctx.GetNextAction()
 }

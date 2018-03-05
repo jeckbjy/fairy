@@ -3,10 +3,9 @@ package ws
 import (
 	"fairy"
 	"fairy/base"
-	"fmt"
 	"net"
 	"net/http"
-	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -70,15 +69,20 @@ func (self *WSTransport) Listen(host string, kind int) error {
 }
 
 func (self *WSTransport) Connect(host string, kind int) (fairy.ConnectFuture, error) {
-	// url check
-	u, err := url.Parse(host)
-	if err != nil {
-		return nil, err
+	// convert url:localhost:8888->ws://localhost:8888
+	pos := strings.Index(host, "//")
+	if pos == -1 {
+		host = "ws://" + host
 	}
 
-	if (u.Scheme != "ws") && (u.Scheme != "wss") {
-		return nil, fmt.Errorf("malformed ws or wss URL")
-	}
+	// u, err := url.Parse(host)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// if (u.Scheme != "ws") && (u.Scheme != "wss") {
+	// 	return nil, fmt.Errorf("malformed ws or wss URL")
+	// }
 
 	newConn := NewConnection(self, self.GetFilterChain(), false, kind)
 	newConn.Host = host

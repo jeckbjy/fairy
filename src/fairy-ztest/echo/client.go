@@ -2,6 +2,8 @@ package echo
 
 import (
 	"fairy"
+	"fairy-ztest/echo/json"
+	"fairy-ztest/echo/pb"
 	"fairy/filter"
 	"fairy/util"
 	"fmt"
@@ -10,10 +12,17 @@ import (
 var gClient fairy.Connection
 
 func SendEchoToServer() {
-	req := &EchoMsg{}
-	req.Info = "Client Echo!"
-	req.Timestamp = util.Now()
-	gClient.Send(req)
+	if IsJsonMode() {
+		req := &json.EchoMsg{}
+		req.Info = "Client json.Echo!"
+		req.Timestamp = util.Now()
+		gClient.Send(req)
+	} else {
+		req := &pb.EchoMsg{}
+		req.Info = "Client pb.Echo!"
+		req.Timestamp = util.Now()
+		gClient.Send(req)
+	}
 }
 
 func OnTimeout(timer *fairy.Timer) {
@@ -32,7 +41,7 @@ func OnConnected(conn fairy.Connection) {
 }
 
 func OnClientEcho(conn fairy.Connection, packet fairy.Packet) {
-	rsp := packet.GetMessage().(*EchoMsg)
+	rsp := packet.GetMessage()
 	fairy.Debug("Recv server echo: %+v", rsp)
 
 	// req := &msg.EchoMsg{}
@@ -44,30 +53,16 @@ func OnClientEcho(conn fairy.Connection, packet fairy.Packet) {
 func StartClient(net_mode string, msg_mode string) {
 	fmt.Printf("start client:net_mode=%v, msg_mode=%v\n", net_mode, msg_mode)
 
-	switch msg_mode {
-	case "pb":
-	default:
-		// json
-		fairy.RegisterMessage(&EchoMsg{})
-		fairy.RegisterHandler(&EchoMsg{}, OnClientEcho)
-	}
-
-	var host string
-	switch net_mode {
-	case "ws":
-		host = "ws://localhost:8888"
-	default:
-		host = "localhost:8888"
-	}
-
-	fairy.StartTimer(10000, OnTimeout)
+	SetMsgMode(msg_mode)
+	RegisterMsg(msg_mode, OnClientEcho)
 
 	tran := NewTransport(net_mode, msg_mode)
 	tran.AddFilters(filter.NewConnectFilter(OnConnected))
 
-	tran.Connect(host, 0)
+	tran.Connect("localhost:8888", 0)
 	tran.Start()
 
+	fairy.StartTimer(10000, OnTimeout)
 	fairy.WaitExit()
 	fmt.Printf("stop client!\n")
 }

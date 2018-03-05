@@ -465,9 +465,11 @@ func (self *Buffer) ReadByte() (byte, error) {
 
 	self.checkCursor()
 
+	result := self.element.Value.([]byte)[self.offset]
 	self.Seek(1, io.SeekCurrent)
-	data := self.element.Value.([]byte)
-	return data[self.offset], nil
+	return result, nil
+	// data := self.element.Value.([]byte)
+	// return data[self.offset], nil
 }
 
 // read until key and remove key

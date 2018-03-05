@@ -10,9 +10,9 @@ import (
 )
 
 func TestFairy() {
-	pside := flag.String("s", "server", "server or client side")
-	pnetmode := flag.String("n", "ws", "network mode,tcp,ws,kcp")
-	pmsgmode := flag.String("m", "json", "proto mode,json,protobuf,sproto,bson")
+	pside := flag.String("s", "server", "test mode:server or client")
+	pnetmode := flag.String("n", "tcp", "network mode:tcp,ws,kcp")
+	pmsgmode := flag.String("m", "pb", "proto mode:json,pb,sproto,bson")
 	flag.Parse()
 
 	if *pside == "server" {

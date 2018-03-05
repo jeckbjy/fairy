@@ -5,12 +5,16 @@ import (
 	"fairy-kcp/kcp"
 	"fairy-protobuf/pbcodec"
 	"fairy-websocket/ws"
+	"fairy-ztest/echo/json"
+	"fairy-ztest/echo/pb"
 	"fairy/codec"
 	"fairy/filter"
 	"fairy/frame"
 	"fairy/identity"
 	"fairy/tcp"
 )
+
+var gMsgMode string
 
 func NewTransport(net_mode string, msg_mode string) fairy.Transport {
 	var tran fairy.Transport
@@ -47,4 +51,38 @@ func NewTransport(net_mode string, msg_mode string) fairy.Transport {
 		filter.NewExecutorFilter())
 
 	return tran
+}
+
+func RegisterMsg(msg_mode string, cb fairy.HandlerCallback) {
+	switch msg_mode {
+	case "pb":
+		// protobuf
+		Register(cb, &pb.EchoMsg{}, 1)
+	default:
+		// json
+		Register(cb, &json.EchoMsg{}, 0)
+	}
+}
+
+func Register(cb fairy.HandlerCallback, msg interface{}, id int) {
+	if id == 0 {
+		fairy.RegisterMessage(msg)
+		fairy.RegisterHandler(msg, cb)
+	} else {
+		fairy.RegisterMessage(msg, id)
+		fairy.RegisterHandler(id, cb)
+	}
+
+}
+
+func SetMsgMode(mode string) {
+	gMsgMode = mode
+}
+
+func IsJsonMode() bool {
+	return gMsgMode == "json"
+}
+
+func IsProtobufMode() bool {
+	return gMsgMode == "pb"
 }
