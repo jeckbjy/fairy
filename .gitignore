@@ -15,6 +15,7 @@
 
 #.vscode/
 .vscode/settings.json
+.cache
 debug
 bin
 pkg
