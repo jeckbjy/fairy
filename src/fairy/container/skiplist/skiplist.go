@@ -1,5 +1,0 @@
-package skiplist
-
-func New() {
-
-}
