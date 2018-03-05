@@ -1,0 +1,6 @@
+hash: 3e6194f0795bf448959ad012012da77ee68d05228fc8d7141433381a21550379
+updated: 2018-03-02T13:28:04.315775+08:00
+imports:
+- name: github.com/xtaci/kcp-go
+  version: 42bc1dfefff592fdb3affa793980c4f6ab4213e5
+testImports: []

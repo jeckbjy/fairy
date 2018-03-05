@@ -1,0 +1,5 @@
+package: cute
+import:
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto

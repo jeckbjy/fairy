@@ -1,0 +1,5 @@
+package skiplist
+
+func New() {
+
+}
