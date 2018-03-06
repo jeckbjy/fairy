@@ -8,5 +8,6 @@ type Message struct {
 	Line     int
 	Timetamp int64
 	Text     string
-	Output   string
+	Uid      string // TODO:support uid
+	Output   string // 最终结果
 }

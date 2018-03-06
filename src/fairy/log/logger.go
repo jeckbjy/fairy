@@ -184,7 +184,7 @@ func (l *Logger) SetProperty(key string, val string) error {
 	return nil
 }
 
-func (l *Logger) Write(level int, format string, args ...interface{}) {
+func (l *Logger) Write(level int, uid string, format string, args ...interface{}) {
 	if !l.Enable || int(level) < l.Level {
 		// not open
 		return
@@ -209,6 +209,7 @@ func (l *Logger) Write(level int, format string, args ...interface{}) {
 	msg.Line = line
 	msg.Timetamp = util.Now()
 	msg.FileName = fileName
+	msg.Uid = uid
 
 	if l.Config.pattern != nil {
 		msg.Output = l.Config.pattern.Format(msg)
