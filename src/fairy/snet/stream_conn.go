@@ -74,10 +74,10 @@ func (sc *StreamConn) Close() {
 	}
 
 	go func() {
-		// stop write
+		sc.channel.Close()
+		// stop write, wait for finish
 		sc.wstopped = true
 		sc.wcnd.Signal()
-		// wait write finish
 		sc.wg.Wait()
 		sc.SetState(fairy.ConnStateClosed)
 		//
@@ -104,6 +104,9 @@ func (sc *StreamConn) Write(buf *fairy.Buffer) {
 	if sc.wbuf == nil {
 		sc.wbuf = list.New()
 		sc.wcnd = sync.NewCond(sc.wmux)
+	}
+
+	if sc.wstopped {
 		go sc.sendThread()
 	}
 
@@ -118,9 +121,11 @@ func (sc *StreamConn) Send(msg interface{}) {
 }
 
 func (sc *StreamConn) recvThread() {
-	bufSize := sc.GetConfig(fairy.CfgReaderBufferSize).(int)
+	// log.Debug("recv thread start")
+
 	sc.wg.Add(1)
 
+	bufSize := sc.GetConfig(fairy.CfgReaderBufferSize).(int)
 	for {
 		data, err := sc.channel.Read(bufSize)
 		if err != nil {
@@ -133,9 +138,12 @@ func (sc *StreamConn) recvThread() {
 	}
 
 	sc.wg.Done()
+	// log.Debug("recv thread finish")
 }
 
 func (sc *StreamConn) sendThread() {
+	// log.Debug("send thread start")
+
 	sc.wg.Add(1)
 
 	sc.wstopped = false
@@ -175,5 +183,7 @@ func (sc *StreamConn) sendThread() {
 		}
 	}
 
+	sc.wbuf.Init()
 	sc.wg.Done()
+	// log.Debug("send thread finish")
 }
