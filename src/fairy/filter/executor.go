@@ -3,6 +3,7 @@ package filter
 import (
 	"fairy"
 	"fairy/base"
+	"fairy/log"
 )
 
 func NewExecutorFilter() *ExecutorFilter {
@@ -44,14 +45,15 @@ func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 
 	if handler == nil {
 		// TODO:throw error
-		fairy.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
+		// ctx.ThrowError(fmt)
+		log.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
 		return ctx.GetStopAction()
 	}
 
 	if self.Executor != nil {
 		self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
 	} else {
-		defer fairy.Catch()
+		defer log.Catch()
 		handler.Invoke(conn, packet)
 	}
 

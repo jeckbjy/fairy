@@ -1,5 +1,7 @@
 package fairy
 
+import "fairy/log"
+
 type Event interface {
 	Process()
 }
@@ -53,6 +55,6 @@ type PacketEvent struct {
 }
 
 func (self *PacketEvent) Process() {
-	defer Catch()
+	defer log.Catch()
 	self.handler.Invoke(self.conn, self.packet)
 }

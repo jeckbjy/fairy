@@ -5,6 +5,7 @@ import (
 	"fairy-ztest/echo/json"
 	"fairy-ztest/echo/pb"
 	"fairy/filter"
+	"fairy/log"
 	"fairy/util"
 	"fmt"
 )
@@ -35,14 +36,14 @@ func OnTimeout(timer *fairy.Timer) {
 }
 
 func OnConnected(conn fairy.Connection) {
-	fairy.Debug("OnConnected")
+	log.Debug("OnConnected")
 	gClient = conn
 	SendEchoToServer()
 }
 
 func OnClientEcho(conn fairy.Connection, packet fairy.Packet) {
 	rsp := packet.GetMessage()
-	fairy.Debug("Recv server echo: %+v", rsp)
+	log.Debug("Recv server echo: %+v", rsp)
 
 	// req := &msg.EchoMsg{}
 	// req.Info = "Client Echo!"

@@ -11,7 +11,7 @@ type Config struct {
 
 func (self *Config) SetDefaultConfig() {
 	self.CfgReconnectCount = math.MaxInt32
-	self.CfgReconnectInterval = 10
+	self.CfgReconnectInterval = 0
 	self.CfgReaderBufferSize = 1024
 }
 

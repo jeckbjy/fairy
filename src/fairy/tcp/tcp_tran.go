@@ -3,6 +3,7 @@ package tcp
 import (
 	"fairy"
 	"fairy/base"
+	"fairy/log"
 	"fairy/snet"
 	"fmt"
 	"net"
@@ -21,7 +22,7 @@ type TcpTran struct {
 func (t *TcpTran) Listen(host string, kind int) error {
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
-		fairy.Error("%+v", err)
+		log.Error("%+v", err)
 		return err
 	}
 

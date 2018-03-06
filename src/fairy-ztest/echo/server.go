@@ -4,6 +4,7 @@ import (
 	"fairy"
 	"fairy-ztest/echo/json"
 	"fairy-ztest/echo/pb"
+	"fairy/log"
 	"fairy/util"
 	"fmt"
 )
@@ -11,14 +12,14 @@ import (
 func OnServerEcho(conn fairy.Connection, packet fairy.Packet) {
 	if IsJsonMode() {
 		req := packet.GetMessage().(*json.EchoMsg)
-		fairy.Debug("Recv client echo: %+v", req)
+		log.Debug("Recv client echo: %+v", req)
 		rsp := &json.EchoMsg{}
 		rsp.Info = "server rsp!"
 		rsp.Timestamp = util.Now()
 		conn.Send(rsp)
 	} else if IsProtobufMode() {
 		req := packet.GetMessage().(*pb.EchoMsg)
-		fairy.Debug("Recv client echo: %+v", req)
+		log.Debug("Recv client echo: %+v", req)
 		rsp := &pb.EchoMsg{}
 		rsp.Info = "server rsp!"
 		rsp.Timestamp = util.Now()
