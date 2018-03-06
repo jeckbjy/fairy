@@ -3,14 +3,15 @@ package filter
 import (
 	"fairy"
 	"fairy/base"
+	"fairy/exec"
 	"fairy/log"
 )
 
 func NewExecutorFilter() *ExecutorFilter {
-	return NewExecutorFilterEx(fairy.GetExecutor(), fairy.GetDispatcher())
+	return NewExecutorFilterEx(exec.GetExecutor(), fairy.GetDispatcher())
 }
 
-func NewExecutorFilterEx(e *fairy.Executor, d *fairy.Dispatcher) *ExecutorFilter {
+func NewExecutorFilterEx(e *exec.Executor, d *fairy.Dispatcher) *ExecutorFilter {
 	filter := &ExecutorFilter{}
 	filter.Executor = e
 	filter.Dispatcher = d
@@ -20,7 +21,7 @@ func NewExecutorFilterEx(e *fairy.Executor, d *fairy.Dispatcher) *ExecutorFilter
 // 默认的执行线程
 type ExecutorFilter struct {
 	base.BaseFilter
-	*fairy.Executor
+	*exec.Executor
 	*fairy.Dispatcher
 }
 
@@ -51,7 +52,7 @@ func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 	}
 
 	if self.Executor != nil {
-		self.DispatchEx(fairy.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
+		self.DispatchEx(exec.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
 	} else {
 		defer log.Catch()
 		handler.Invoke(conn, packet)

@@ -56,8 +56,9 @@ import (
 ///   * %[name] - the value of the message parameter with the given name
 ///   * %% - percent sign
 
+// width %6s
 // for json pattern :{"time"="%y-%m=%d %H:%M:%S", "level"="%q", "file"="%U:%u", "text"="%t"}
-const DEFAULT_PATTERN = "[%q %y-%m-%d %H:%M:%S %U:%u] %t"
+const DEFAULT_PATTERN = "[%q %y-%m-%d %H:%M:%S %U[10]:%u[3]] %t"
 
 func NewPattern() *Pattern {
 	p := &Pattern{}
@@ -66,6 +67,16 @@ func NewPattern() *Pattern {
 
 type Pattern struct {
 	actions util.PatternActionArray
+}
+
+func buildWidth(builder *bytes.Buffer, text string, width string) {
+	if width != "" {
+		format := "%" + width + "s"
+		data := fmt.Sprintf(format, text)
+		builder.WriteString(data)
+	} else {
+		builder.WriteString(text)
+	}
 }
 
 func (self *Pattern) Format(msg *Message) string {
@@ -90,11 +101,12 @@ func (self *Pattern) Format(msg *Message) string {
 		case 'O': // ostid
 		case 'N': // node name
 		case 'P': // path,in poco is pid
-			builder.WriteString(msg.File)
+			buildWidth(&builder, msg.File, action.Property)
 		case 'U':
-			builder.WriteString(msg.FileName)
+			buildWidth(&builder, msg.FileName, action.Property)
 		case 'u':
-			builder.WriteString(strconv.Itoa(msg.Line))
+			buildWidth(&builder, strconv.Itoa(msg.Line), action.Property)
+			// builder.WriteString(strconv.Itoa(msg.Line))
 		case 'w':
 			builder.WriteString(ts.Weekday().String()[0:3])
 		case 'W':

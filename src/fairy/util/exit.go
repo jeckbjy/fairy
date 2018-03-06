@@ -4,6 +4,14 @@ import (
 	"os"
 )
 
+func RegisterExit(hander ExitHandler) {
+	GetExit().Register(hander)
+}
+
+func WaitExit() {
+	GetExit().Wait()
+}
+
 var gExit *Exit
 
 func GetExit() *Exit {

@@ -6,6 +6,7 @@ import (
 	"fairy-ztest/echo/pb"
 	"fairy/filter"
 	"fairy/log"
+	"fairy/timer"
 	"fairy/util"
 	"fmt"
 )
@@ -13,6 +14,7 @@ import (
 var gClient fairy.Connection
 
 func SendEchoToServer() {
+	log.Debug("send msg to server!")
 	if IsJsonMode() {
 		req := &json.EchoMsg{}
 		req.Info = "Client json.Echo!"
@@ -26,13 +28,14 @@ func SendEchoToServer() {
 	}
 }
 
-func OnTimeout(timer *fairy.Timer) {
+func OnTimeout(t *timer.Timer) {
+	log.Debug("timeout")
 	if gClient == nil {
 		return
 	}
 
 	SendEchoToServer()
-	timer.Restart(1000)
+	t.Restart()
 }
 
 func OnConnected(conn fairy.Connection) {
@@ -63,7 +66,7 @@ func StartClient(net_mode string, msg_mode string) {
 	tran.Connect("localhost:8888", 0)
 	tran.Start()
 
-	fairy.StartTimer(10000, OnTimeout)
+	timer.Start(500, OnTimeout)
 	fairy.WaitExit()
 	fmt.Printf("stop client!\n")
 }

@@ -5,6 +5,7 @@ import (
 	"fairy/base"
 	"fairy/log"
 	"fairy/snet"
+	"fairy/timer"
 	"fmt"
 	"net"
 )
@@ -100,7 +101,7 @@ func (t *TcpTran) Reconnect(conn fairy.Connection) (fairy.Future, error) {
 	if interval == 0 {
 		t.ConnectBy(promise, conn)
 	} else {
-		fairy.StartTimer(int64(interval*1000), func(*fairy.Timer) {
+		timer.Start(int64(interval*1000), func(*timer.Timer) {
 			t.ConnectBy(promise, conn)
 		})
 

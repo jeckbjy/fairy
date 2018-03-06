@@ -1,4 +1,4 @@
-package fairy
+package exec
 
 import (
 	"fairy/util"
@@ -90,7 +90,7 @@ func (self *Executor) GetQueue(queueId int) *EventQueue {
 	}
 
 	if len(self.workQueue) == 0 {
-		RegisterExit(self)
+		util.RegisterExit(self)
 	}
 
 	count := queueId - len(self.workQueue) + 1

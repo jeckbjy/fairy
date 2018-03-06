@@ -44,15 +44,6 @@ func TestTerminalColor(t *testing.T) {
 	terminal.Reset()
 }
 
-func TestTimer(t *testing.T) {
-	tt := util.Now()
-	fairy.StartTimer(10, func(timer *fairy.Timer) {
-		fairy.Debug("OnTimer out:%+v", util.Now()-tt)
-	})
-
-	util.Sleep(10000)
-}
-
 func TestChannel(t *testing.T) {
 	t.Log("start!!!")
 	stopChan := make(chan bool)

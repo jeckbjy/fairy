@@ -4,6 +4,7 @@ import (
 	"fairy"
 	"fairy/base"
 	"fairy/snet"
+	"fairy/timer"
 	"fmt"
 	"net"
 	"net/http"
@@ -133,7 +134,7 @@ func (wt *WSTran) Reconnect(conn fairy.Connection) (fairy.Future, error) {
 	if interval == 0 {
 		wt.ConnectBy(promise, conn)
 	} else {
-		fairy.StartTimer(int64(interval*1000), func(*fairy.Timer) {
+		timer.Start(int64(interval*1000), func(*timer.Timer) {
 			wt.ConnectBy(promise, conn)
 		})
 
