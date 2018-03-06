@@ -10,23 +10,23 @@ const (
 	SIDE_CLIENT = 1
 )
 
-type Connection struct {
+type Conn struct {
 	AttrMap
 	fairy.FilterChain
-	transport fairy.Transport
-	connId    uint
-	openId    string
-	uid       uint64
-	kind      int
-	State     int32
-	side      int
-	data      interface{}
-	Host      string
+	tran   fairy.Transport
+	connId uint
+	openId string
+	uid    uint64
+	kind   int
+	State  int32
+	side   int
+	data   interface{}
+	host   string
 }
 
-func (self *Connection) NewBase(transport fairy.Transport, filters fairy.FilterChain, side bool, kind int) {
-	self.transport = transport
-	self.FilterChain = filters
+func (self *Conn) Create(tran fairy.Transport, side bool, kind int) {
+	self.tran = tran
+	self.FilterChain = tran.GetFilterChain()
 	self.kind = kind
 	if side {
 		self.side = SIDE_SERVER
@@ -37,74 +37,82 @@ func (self *Connection) NewBase(transport fairy.Transport, filters fairy.FilterC
 	self.connId = fairy.GetConnMgr().NewId(side)
 }
 
-func (self *Connection) GetType() int {
+func (self *Conn) GetType() int {
 	return self.kind
 }
 
-func (self *Connection) SetType(ctype int) {
+func (self *Conn) SetType(ctype int) {
 	self.kind = ctype
 }
 
-func (self *Connection) GetConnId() uint {
+func (self *Conn) GetConnId() uint {
 	return self.connId
 }
 
-func (self *Connection) SetConnId(id uint) {
+func (self *Conn) SetConnId(id uint) {
 	self.connId = id
 }
 
-func (self *Connection) GetUid() uint64 {
+func (self *Conn) GetUid() uint64 {
 	return self.uid
 }
 
-func (self *Connection) SetUid(uid uint64) {
+func (self *Conn) SetUid(uid uint64) {
 	self.uid = uid
 }
 
-func (self *Connection) GetOpenId() string {
+func (self *Conn) GetOpenId() string {
 	return self.openId
 }
 
-func (self *Connection) SetOpenId(id string) {
+func (self *Conn) SetOpenId(id string) {
 	self.openId = id
 }
 
-func (self *Connection) IsState(state int32) bool {
+func (self *Conn) IsState(state int32) bool {
 	return self.State == int32(state)
 }
 
-func (self *Connection) SwapState(old int32, new int32) bool {
+func (self *Conn) SwapState(old int32, new int32) bool {
 	return atomic.CompareAndSwapInt32(&self.State, old, new)
 }
 
-func (self *Connection) GetState() int32 {
+func (self *Conn) GetState() int32 {
 	return self.State
 }
 
-func (self *Connection) SetState(state int32) {
+func (self *Conn) SetState(state int32) {
 	self.State = state
 }
 
-func (self *Connection) GetData() interface{} {
+func (self *Conn) GetData() interface{} {
 	return self.data
 }
 
-func (self *Connection) SetData(data interface{}) {
+func (self *Conn) SetData(data interface{}) {
 	self.data = data
 }
 
-func (self *Connection) IsServerSide() bool {
+func (self *Conn) SetHost(host string) {
+	self.host = host
+}
+
+func (self *Conn) GetHost() string {
+	return self.host
+}
+
+func (self *Conn) IsServerSide() bool {
 	return self.side == SIDE_SERVER
 }
 
-func (self *Connection) IsClientSide() bool {
+func (self *Conn) IsClientSide() bool {
 	return self.side == SIDE_CLIENT
 }
 
-func (self *Connection) GetTransport() fairy.Transport {
-	return self.transport
+func (self *Conn) GetTransport() fairy.Transport {
+	return self.tran
 }
 
-func (self *Connection) GetConfig(key *fairy.AttrKey) interface{} {
-	return self.transport.GetConfig(key)
+func (self *Conn) GetConfig(key *fairy.AttrKey) interface{} {
+	return self.tran.GetConfig(key)
 }

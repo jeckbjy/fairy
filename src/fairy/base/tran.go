@@ -3,21 +3,12 @@ package base
 import (
 	"fairy"
 	"fairy/util"
+	"math"
 )
 
-type Config struct {
-	AttrMap
-	CfgReconnectInterval int // 单位秒
-	CfgReaderBufferSize  int
-}
-
-func (self *Config) SetDefaultConfig() {
-	self.CfgReconnectInterval = 10
-	self.CfgReaderBufferSize = 1024
-}
-
-func (self *Config) IsNeedReconnect() bool {
-	return self.CfgReconnectInterval >= 0
+type TransportEx interface {
+	fairy.Transport
+	ConnectBy()
 }
 
 type Transport struct {
@@ -25,17 +16,20 @@ type Transport struct {
 	filters fairy.FilterChain
 }
 
-func (self *Transport) NewBase() {
-	self.SetDefaultConfig()
-}
-
 func (self *Transport) SetConfig(key *fairy.AttrKey, val interface{}) {
 	switch key {
-	case fairy.KeyReconnectInterval:
+	case fairy.CfgReconnectCount:
+		if ret, err := util.ConvInt(val); err == nil {
+			self.CfgReconnectCount = ret
+			if self.CfgReconnectCount < 0 {
+				self.CfgReconnectCount = math.MaxInt32
+			}
+		}
+	case fairy.CfgReconnectInterval:
 		if ret, err := util.ConvInt(val); err == nil {
 			self.CfgReconnectInterval = ret
 		}
-	case fairy.KeyReaderBufferSize:
+	case fairy.CfgReaderBufferSize:
 		if ret, err := util.ConvInt(val); err == nil {
 			self.CfgReaderBufferSize = ret
 		}
@@ -46,9 +40,11 @@ func (self *Transport) SetConfig(key *fairy.AttrKey, val interface{}) {
 
 func (self *Transport) GetConfig(key *fairy.AttrKey) interface{} {
 	switch key {
-	case fairy.KeyReconnectInterval:
+	case fairy.CfgReconnectCount:
+		return self.CfgReconnectCount
+	case fairy.CfgReconnectInterval:
 		return self.CfgReconnectInterval
-	case fairy.KeyReaderBufferSize:
+	case fairy.CfgReaderBufferSize:
 		return self.CfgReaderBufferSize
 	default:
 		return self.GetAttr(key)

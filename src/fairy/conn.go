@@ -30,8 +30,8 @@ type Connection interface {
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	// operations
+	Wait()
 	Close()
-	Flush()
 	Read() *Buffer
 	Write(buffer *Buffer)
 	Send(obj interface{})
