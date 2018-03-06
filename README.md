@@ -5,8 +5,8 @@
 ## 架构
 * Transport和Connection
 
- transport:主要提供Listen和Connect两个接口,用于创建Connection
- connection:类似于net.Conn，主要提供Read，Write，Close等接口，这些操作都是异步完成
+    - Transport:主要提供Listen和Connect两个接口,用于创建Connection
+    - Connection:类似于net.Conn，主要提供Read，Write，Close等接口，区别是读写是异步完成的
 
  ![Tran和Conn](doc/tran-conn.png)
 
