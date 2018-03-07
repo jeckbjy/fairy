@@ -3,22 +3,59 @@ package filter
 import (
 	"fairy"
 	"fairy/base"
+	"fairy/exec"
+	"fairy/log"
+	"fairy/packet"
 	"strings"
 )
 
-func NewTelnet() *TelnetFilter {
-	return NewTelnetFilterEx("fairy>")
+const (
+	// TelnetMsgKey 消息唯一标识
+	TelnetMsgKey = "TelnetMsg"
+)
+
+// TelnetCB 读处理回调
+type TelnetCB func(conn fairy.Conn, str string)
+
+func defaultCB(conn fairy.Conn, str string) {
+	handler := fairy.GetDispatcher().GetHandlerByName(TelnetMsgKey)
+	if handler != nil {
+		pkt := packet.NewBase()
+		pkt.SetName(TelnetMsgKey)
+		pkt.SetMessage(str)
+		exec.GetExecutor().Dispatch(exec.NewPacketEvent(conn, pkt, handler))
+	} else {
+		log.Error("cannot find telnet handler!")
+	}
 }
 
-func NewTelnetFilterEx(prompt string) *TelnetFilter {
+// NewTelnet 创建TelnetFilter
+func NewTelnet() *TelnetFilter {
+	return NewTelnetEx(defaultCB, "fairy>")
+}
+
+// NewTelnetEx 带有参数的创建TelnetFilter
+func NewTelnetEx(cb TelnetCB, prompt string) *TelnetFilter {
 	f := &TelnetFilter{}
 	f.Prompt = prompt
+	f.cb = cb
 	return f
 }
 
+/**
+ * TelnetFilter 使用方法
+ * func telnet_cb(conn fairy.Conn, pkt fairy.Packet) {
+ * 		str := pkt.GetMessage().(str)
+ * }
+ *
+ * 1:默认通过注册回调函数,实现调用,默认会在主线程中处理
+ * fairy.RegisterHandler(filter.TelnetMsgKey, telnet_cb)
+ * 2:创建时注册回调函数
+ */
 type TelnetFilter struct {
 	base.BaseFilter
 	Prompt string
+	cb     TelnetCB
 }
 
 func (self *TelnetFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction {
@@ -39,9 +76,10 @@ func (self *TelnetFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 		if err == nil {
 			str := result.String()
 			ctx.SetMessage(str)
-			// fmt.Printf("%+v", str)
-			// conn := ctx.GetConnection()
-			// conn.Send(str)
+			// 默认行为
+			if self.cb != nil {
+				self.cb(ctx.GetConnection(), str)
+			}
 		}
 	}
 
