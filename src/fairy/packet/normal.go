@@ -34,5 +34,6 @@ func DecodeNormal(pkt *BasePacket, buffer *fairy.Buffer) error {
 	if pkt.result, err = reader.GetUint(); err != nil {
 		return err
 	}
+
 	return nil
 }
