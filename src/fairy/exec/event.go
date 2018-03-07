@@ -2,7 +2,6 @@ package exec
 
 import (
 	"fairy"
-	"fairy/log"
 )
 
 type Event interface {
@@ -24,18 +23,17 @@ func (self *FuncEvent) Process() {
 	self.cb()
 }
 
-func NewPacketEvent(conn fairy.Connection, packet fairy.Packet, handler fairy.Handler) *PacketEvent {
+func NewPacketEvent(conn fairy.Conn, packet fairy.Packet, handler fairy.Handler) *PacketEvent {
 	ev := &PacketEvent{conn: conn, packet: packet, handler: handler}
 	return ev
 }
 
 type PacketEvent struct {
-	conn    fairy.Connection
+	conn    fairy.Conn
 	packet  fairy.Packet
 	handler fairy.Handler
 }
 
 func (self *PacketEvent) Process() {
-	defer log.Catch()
 	self.handler.Invoke(self.conn, self.packet)
 }

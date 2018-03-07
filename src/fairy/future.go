@@ -4,7 +4,7 @@ type Future interface {
 	IsSuccess() bool
 	IsFailure() bool
 	IsCanceled() bool
-	Conn() Connection
+	Conn() Conn
 	Cancel() bool
 	Wait(msec int64) bool
 }

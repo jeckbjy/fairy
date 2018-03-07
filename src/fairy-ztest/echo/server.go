@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-func OnServerEcho(conn fairy.Connection, packet fairy.Packet) {
+func OnServerEcho(conn fairy.Conn, packet fairy.Packet) {
 	if IsJsonMode() {
 		req := packet.GetMessage().(*json.EchoMsg)
 		log.Debug("Recv client echo: %+v", req)

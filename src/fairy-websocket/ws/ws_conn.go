@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewConn(tran fairy.Transport, side bool, kind int) *snet.StreamConn {
+func newConn(tran fairy.Transport, side bool, kind int) *snet.StreamConn {
 	conn := snet.NewConn(&WSConn{}, tran, side, kind)
 	return conn
 }

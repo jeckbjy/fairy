@@ -9,7 +9,7 @@ import (
 	"math"
 )
 
-func NewIntegerIdentity() *IntegerIdentity {
+func NewInteger() *IntegerIdentity {
 	return NewIntegerIdentityEx(true)
 }
 
@@ -43,7 +43,7 @@ func (self *IntegerIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) 
 	}
 
 	// create packet
-	pkt := packet.NewBasePacket()
+	pkt := packet.NewBase()
 	pkt.SetId(id)
 
 	return pkt, nil

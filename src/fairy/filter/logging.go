@@ -6,7 +6,7 @@ import (
 	"fairy/log"
 )
 
-func NewLogFilter() *LogFilter {
+func NewLog() *LogFilter {
 	return &LogFilter{}
 }
 

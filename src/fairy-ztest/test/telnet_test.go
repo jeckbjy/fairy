@@ -44,7 +44,7 @@ func TelnetDemo() {
 func TestTelnet(t *testing.T) {
 	tran := tcp.NewTransport()
 	tran.AddFilters(
-		filter.NewTelnetFilter())
+		filter.NewTelnet())
 	tran.Listen(":8080", 0)
 	fairy.WaitExit()
 }

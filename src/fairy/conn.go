@@ -10,7 +10,7 @@ const (
 )
 
 // Connection has properties Type ConnId,Uid,OpenId,Data,State,Side and so on
-type Connection interface {
+type Conn interface {
 	AttrMap
 	GetType() int
 	SetType(ctype int)

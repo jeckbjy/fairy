@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func NewTelnetFilter() *TelnetFilter {
+func NewTelnet() *TelnetFilter {
 	return NewTelnetFilterEx("fairy>")
 }
 

@@ -7,11 +7,11 @@ import (
 	"fairy/log"
 )
 
-func NewExecutorFilter() *ExecutorFilter {
-	return NewExecutorFilterEx(exec.GetExecutor(), fairy.GetDispatcher())
+func NewExecutor() *ExecutorFilter {
+	return NewExecutorEx(exec.GetExecutor(), fairy.GetDispatcher())
 }
 
-func NewExecutorFilterEx(e *exec.Executor, d *fairy.Dispatcher) *ExecutorFilter {
+func NewExecutorEx(e *exec.Executor, d *fairy.Dispatcher) *ExecutorFilter {
 	filter := &ExecutorFilter{}
 	filter.Executor = e
 	filter.Dispatcher = d
@@ -54,7 +54,6 @@ func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 	if self.Executor != nil {
 		self.DispatchEx(exec.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
 	} else {
-		defer log.Catch()
 		handler.Invoke(conn, packet)
 	}
 

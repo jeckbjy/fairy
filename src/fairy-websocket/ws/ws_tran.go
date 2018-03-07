@@ -31,7 +31,7 @@ func (self *ServeHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// kind
-	new_conn := NewConn(self.owner, true, self.kind)
+	new_conn := newConn(self.owner, true, self.kind)
 	new_conn.Open(conn)
 }
 
@@ -73,7 +73,7 @@ func (wt *WSTran) Listen(host string, kind int) error {
 	return nil
 }
 
-func (wt *WSTran) ConnectBy(promise fairy.Promise, new_conn fairy.Connection) (fairy.Future, error) {
+func (wt *WSTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.Future, error) {
 	wt.AddGroup()
 	stream_conn := new_conn.(*snet.StreamConn)
 	host := stream_conn.GetHost()
@@ -116,13 +116,13 @@ func (wt *WSTran) Connect(host string, kind int) (fairy.Future, error) {
 		host = "ws://" + host
 	}
 
-	new_conn := NewConn(wt, false, kind)
+	new_conn := newConn(wt, false, kind)
 	new_conn.SetHost(host)
 	promise := base.NewPromise(new_conn)
 	return wt.ConnectBy(promise, new_conn)
 }
 
-func (wt *WSTran) Reconnect(conn fairy.Connection) (fairy.Future, error) {
+func (wt *WSTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if wt.IsStopped() {
 		return nil, fmt.Errorf("stopped, cannot reconnect")
 	}

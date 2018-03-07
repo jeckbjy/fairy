@@ -4,9 +4,9 @@ type FilterChain interface {
 	Len() int
 	AddFirst(filter Filter)
 	AddLast(filter Filter)
-	HandleOpen(conn Connection)
-	HandleClose(conn Connection)
-	HandleRead(conn Connection)
-	HandleWrite(conn Connection, msg interface{})
-	HandleError(conn Connection, err error)
+	HandleOpen(conn Conn)
+	HandleClose(conn Conn)
+	HandleRead(conn Conn)
+	HandleWrite(conn Conn, msg interface{})
+	HandleError(conn Conn, err error)
 }

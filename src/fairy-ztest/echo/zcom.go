@@ -34,21 +34,21 @@ func NewTransport(net_mode string, msg_mode string) fairy.Transport {
 
 	switch msg_mode {
 	case "pb":
-		zframe = frame.NewVarintLengthFrame()
-		zidentity = identity.NewIntegerIdentity()
+		zframe = frame.NewVarintLength()
+		zidentity = identity.NewInteger()
 		zcodec = pbcodec.New()
 	default:
 		// json
-		zframe = frame.NewLineFrame()
-		zidentity = identity.NewStringIdentity()
+		zframe = frame.NewLine()
+		zidentity = identity.NewString()
 		zcodec = codec.NewJson()
 	}
 
 	tran.AddFilters(
-		filter.NewLogFilter(),
-		filter.NewFrameFilter(zframe),
-		filter.NewPacketFilter(zidentity, zcodec),
-		filter.NewExecutorFilter())
+		filter.NewLog(),
+		filter.NewFrame(zframe),
+		filter.NewPacket(zidentity, zcodec),
+		filter.NewExecutor())
 
 	return tran
 }

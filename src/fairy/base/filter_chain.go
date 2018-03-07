@@ -33,21 +33,21 @@ func (self *FilterChain) AddLast(filter fairy.Filter) {
 	self.filters.PushBack(filter)
 }
 
-func (self *FilterChain) HandleOpen(conn fairy.Connection) {
+func (self *FilterChain) HandleOpen(conn fairy.Conn) {
 	ctx := NewContext(self, conn)
 	self.TravelFront(func(filter fairy.Filter) fairy.FilterAction {
 		return filter.HandleOpen(ctx)
 	})
 }
 
-func (self *FilterChain) HandleClose(conn fairy.Connection) {
+func (self *FilterChain) HandleClose(conn fairy.Conn) {
 	ctx := NewContext(self, conn)
 	self.TravelBack(func(filter fairy.Filter) fairy.FilterAction {
 		return filter.HandleClose(ctx)
 	})
 }
 
-func (self *FilterChain) HandleRead(conn fairy.Connection) {
+func (self *FilterChain) HandleRead(conn fairy.Conn) {
 	// loop read when stop
 	ctx := NewContext(self, conn)
 	self.TravelFront(func(filter fairy.Filter) fairy.FilterAction {
@@ -55,7 +55,7 @@ func (self *FilterChain) HandleRead(conn fairy.Connection) {
 	})
 }
 
-func (self *FilterChain) HandleWrite(conn fairy.Connection, msg interface{}) {
+func (self *FilterChain) HandleWrite(conn fairy.Conn, msg interface{}) {
 	ctx := NewContext(self, conn)
 	ctx.SetMessage(msg)
 	self.TravelBack(func(filter fairy.Filter) fairy.FilterAction {
@@ -63,7 +63,7 @@ func (self *FilterChain) HandleWrite(conn fairy.Connection, msg interface{}) {
 	})
 }
 
-func (self *FilterChain) HandleError(conn fairy.Connection, err error) {
+func (self *FilterChain) HandleError(conn fairy.Conn, err error) {
 	ctx := NewContext(self, conn)
 	ctx.SetError(err)
 	result := self.TravelFront(func(filter fairy.Filter) fairy.FilterAction {

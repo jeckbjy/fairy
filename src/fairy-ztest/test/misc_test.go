@@ -2,6 +2,7 @@ package test
 
 import (
 	"fairy"
+	"fairy/log"
 	"fairy/util"
 	"fairy/util/terminal"
 	"fmt"
@@ -25,8 +26,8 @@ func TestTable(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	fairy.Debug("%+v", "HelloWord!")
-	fairy.Debug("%+v,%+v", "asdf", 1)
+	log.Debug("%+v", "HelloWord!")
+	log.Debug("%+v,%+v", "asdf", 1)
 }
 
 func TestSignal(t *testing.T) {

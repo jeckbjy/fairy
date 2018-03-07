@@ -4,7 +4,7 @@ import (
 	"reflect"
 )
 
-func NewBasePacket() *BasePacket {
+func NewBase() *BasePacket {
 	packet := &BasePacket{}
 	return packet
 }

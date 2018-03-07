@@ -5,7 +5,7 @@ import (
 	"fairy/base"
 )
 
-func NewEncryptFilter() *EncryptFilter {
+func NewEncrypt() *EncryptFilter {
 	filter := &EncryptFilter{}
 	return filter
 }

@@ -5,7 +5,7 @@ import (
 	"fairy/base"
 )
 
-func NewFrameFilter(frame fairy.Frame) *FrameFilter {
+func NewFrame(frame fairy.Frame) *FrameFilter {
 	filter := &FrameFilter{}
 	filter.Frame = frame
 	return filter

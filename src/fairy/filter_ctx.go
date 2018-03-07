@@ -2,7 +2,7 @@ package fairy
 
 type FilterContext interface {
 	AttrMap
-	GetConnection() Connection
+	GetConnection() Conn
 	SetMessage(msg interface{})
 	GetMessage() interface{}
 	GetHandler() Handler

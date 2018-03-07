@@ -4,7 +4,7 @@ import (
 	"fairy"
 )
 
-func NewContext(filterChain fairy.FilterChain, conn fairy.Connection) *FilterContext {
+func NewContext(filterChain fairy.FilterChain, conn fairy.Conn) *FilterContext {
 	ctx := &FilterContext{}
 	ctx.conn = conn
 	ctx.filterChain = filterChain
@@ -14,13 +14,13 @@ func NewContext(filterChain fairy.FilterChain, conn fairy.Connection) *FilterCon
 type FilterContext struct {
 	AttrMap
 	filterChain fairy.FilterChain
-	conn        fairy.Connection
+	conn        fairy.Conn
 	message     interface{}
 	handler     fairy.Handler
 	err         error
 }
 
-func (self *FilterContext) GetConnection() fairy.Connection {
+func (self *FilterContext) GetConnection() fairy.Conn {
 	return self.conn
 }
 

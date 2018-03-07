@@ -11,7 +11,7 @@ import (
 	"fmt"
 )
 
-var gClient fairy.Connection
+var gClient fairy.Conn
 
 func SendEchoToServer() {
 	log.Debug("send msg to server!")
@@ -38,20 +38,15 @@ func OnTimeout(t *timer.Timer) {
 	t.Restart()
 }
 
-func OnConnected(conn fairy.Connection) {
+func OnConnected(conn fairy.Conn) {
 	log.Debug("OnConnected")
 	gClient = conn
 	SendEchoToServer()
 }
 
-func OnClientEcho(conn fairy.Connection, packet fairy.Packet) {
+func OnClientEcho(conn fairy.Conn, packet fairy.Packet) {
 	rsp := packet.GetMessage()
 	log.Debug("Recv server echo: %+v", rsp)
-
-	// req := &msg.EchoMsg{}
-	// req.Info = "Client Echo!"
-	// req.Timestamp = util.Now()
-	// gClient.Send(req)
 }
 
 func StartClient(net_mode string, msg_mode string) {
@@ -61,7 +56,7 @@ func StartClient(net_mode string, msg_mode string) {
 	RegisterMsg(msg_mode, OnClientEcho)
 
 	tran := NewTransport(net_mode, msg_mode)
-	tran.AddFilters(filter.NewConnectFilter(OnConnected))
+	tran.AddFilters(filter.NewConnect(OnConnected))
 
 	tran.Connect("localhost:8888", 0)
 	tran.Start()

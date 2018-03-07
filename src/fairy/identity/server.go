@@ -6,6 +6,10 @@ import (
 	"fmt"
 )
 
+func NewServer() *ServerIdentity {
+	return &ServerIdentity{}
+}
+
 // for server packet
 type ServerIdentity struct {
 }

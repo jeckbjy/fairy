@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func NewDelimiterFrame(delimiter string) fairy.Frame {
+func NewDelimiter(delimiter string) fairy.Frame {
 	frame := &DelimiterFrame{}
 	frame.delimiter = delimiter
 	if delimiter == "" {

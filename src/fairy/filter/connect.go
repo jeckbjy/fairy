@@ -5,12 +5,12 @@ import (
 	"fairy/base"
 )
 
-func NewConnectFilter(cb ConnectCallback) *ConnectFilter {
+func NewConnect(cb ConnectCallback) *ConnectFilter {
 	filter := &ConnectFilter{cb: cb}
 	return filter
 }
 
-type ConnectCallback func(fairy.Connection)
+type ConnectCallback func(fairy.Conn)
 
 type ConnectFilter struct {
 	base.BaseFilter

@@ -8,7 +8,7 @@ import (
 const maxConnId = 1 << 31
 
 type ConnectionMgr struct {
-	conns    map[uint]Connection
+	conns    map[uint]Conn
 	serverId uint
 	clientId uint
 	mu       sync.Mutex
@@ -39,7 +39,7 @@ func (self *ConnectionMgr) genId(serverSide bool) uint {
 	return id
 }
 
-func (self *ConnectionMgr) Put(conn Connection) {
+func (self *ConnectionMgr) Put(conn Conn) {
 	self.mu.Lock()
 	if conn.GetConnId() == 0 {
 		conn.SetConnId(self.genId(conn.IsServerSide()))
@@ -49,7 +49,7 @@ func (self *ConnectionMgr) Put(conn Connection) {
 	self.mu.Unlock()
 }
 
-func (self *ConnectionMgr) Get(id uint) Connection {
+func (self *ConnectionMgr) Get(id uint) Conn {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	return self.conns[id]
@@ -66,7 +66,7 @@ func (self *ConnectionMgr) Close() {
 	for _, conn := range self.conns {
 		conn.Close()
 	}
-	self.conns = make(map[uint]Connection)
+	self.conns = make(map[uint]Conn)
 	self.mu.Unlock()
 }
 
@@ -82,6 +82,6 @@ func GetConnMgr() *ConnectionMgr {
 
 func NewConnMgr() *ConnectionMgr {
 	mgr := &ConnectionMgr{}
-	mgr.conns = make(map[uint]Connection)
+	mgr.conns = make(map[uint]Conn)
 	return mgr
 }

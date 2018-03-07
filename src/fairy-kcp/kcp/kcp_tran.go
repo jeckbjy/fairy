@@ -46,7 +46,7 @@ func (kt *KcpTran) Listen(host string, kind int) error {
 	return nil
 }
 
-func (kt *KcpTran) ConnectBy(promise fairy.Promise, new_conn fairy.Connection) (fairy.Future, error) {
+func (kt *KcpTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.Future, error) {
 	kt.AddGroup()
 	stream_conn := new_conn.(*snet.StreamConn)
 	host := stream_conn.GetHost()
@@ -89,7 +89,7 @@ func (kt *KcpTran) Connect(host string, kind int) (fairy.Future, error) {
 	return kt.ConnectBy(promise, new_conn)
 }
 
-func (kt *KcpTran) Reconnect(conn fairy.Connection) (fairy.Future, error) {
+func (kt *KcpTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if kt.IsStopped() {
 		return nil, fmt.Errorf("stopped, cannot reconnect")
 	}
@@ -182,7 +182,7 @@ func (kt *KcpTran) Reconnect(conn fairy.Connection) (fairy.Future, error) {
 
 // func (kt *KcpTran) Reconnect(conn *KcpConn) bool {
 // 	if conn.IsClientSide() && kt.IsNeedReconnect() {
-// 		// 断线重连
+// 		// 断线針连
 // 		if kt.CfgReconnectInterval == 0 {
 // 			kt.ConnectBy(nil, conn, conn.Host)
 // 		} else {

@@ -4,11 +4,11 @@ import (
 	"fairy"
 )
 
-func NewLineFrame() fairy.Frame {
-	return NewLineFrameEx("\n")
+func NewLine() fairy.Frame {
+	return NewLineEx("\n")
 }
 
-func NewLineFrameEx(delimiter string) fairy.Frame {
+func NewLineEx(delimiter string) fairy.Frame {
 	frame := &LineFrame{}
 	frame.delimiter = delimiter
 	return frame

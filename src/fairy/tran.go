@@ -14,7 +14,7 @@ type Transport interface {
 	AddFilters(filters ...Filter)
 	Listen(host string, kind int) error
 	Connect(host string, kind int) (Future, error)
-	Reconnect(conn Connection) (Future, error) // 断线重连使用
+	Reconnect(conn Conn) (Future, error) // 断线重连使用
 	Start()
 	Stop()
 	Wait()

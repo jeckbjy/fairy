@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-func NewVarintLengthFrame() *VarintLengthFrame {
+func NewVarintLength() *VarintLengthFrame {
 	frame := &VarintLengthFrame{}
 	return frame
 }

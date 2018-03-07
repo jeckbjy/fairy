@@ -6,7 +6,7 @@ import (
 	"fairy/packet"
 )
 
-func NewPacketFilter(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
+func NewPacket(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
 	filter := &PacketFilter{}
 	filter.Identity = identity
 	filter.Codec = codec

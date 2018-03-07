@@ -6,7 +6,7 @@ import (
 	"fairy/packet"
 )
 
-func NewStringIdentity() *StringIdentity {
+func NewString() *StringIdentity {
 	id := &StringIdentity{}
 	return id
 }
@@ -40,7 +40,7 @@ func (self *StringIdentity) Decode(buffer *fairy.Buffer) (fairy.Packet, error) {
 		return nil, err
 	}
 
-	pkt := packet.NewBasePacket()
+	pkt := packet.NewBase()
 	pkt.SetName(string(name))
 	return pkt, nil
 }

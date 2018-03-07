@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-func NewFixedLengthFrame(headLen uint, littleEndian bool) *FixedLengthFrame {
+func NewFixedLength(headLen uint, littleEndian bool) *FixedLengthFrame {
 	frame := &FixedLengthFrame{}
 	frame.headLen = headLen
 	frame.littleEndian = littleEndian

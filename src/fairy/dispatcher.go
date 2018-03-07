@@ -1,6 +1,7 @@
 package fairy
 
 import (
+	"fairy/log"
 	"fairy/util"
 	"fmt"
 	"reflect"
@@ -43,10 +44,10 @@ func RegisterUncaughtHandler(cb HandlerCallback) {
 //////////////////////////////////////////////////////////
 type Handler interface {
 	GetQueueId() int // 暗示在哪个线程执行
-	Invoke(conn Connection, packet Packet)
+	Invoke(conn Conn, packet Packet)
 }
 
-type HandlerCallback func(Connection, Packet)
+type HandlerCallback func(Conn, Packet)
 type HandlerHolder struct {
 	cb      HandlerCallback
 	queueId int
@@ -56,7 +57,8 @@ func (self *HandlerHolder) GetQueueId() int {
 	return self.queueId
 }
 
-func (self *HandlerHolder) Invoke(conn Connection, packet Packet) {
+func (self *HandlerHolder) Invoke(conn Conn, packet Packet) {
+	defer log.Catch()
 	self.cb(conn, packet)
 }
 
