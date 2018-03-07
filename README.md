@@ -1,8 +1,14 @@
 # Fairy library(WIP)
 
-模仿netty,mina,grizzly，用go语言实现的一套网络库，api的设计上更接近于grizzly,为了方便游戏开发，除了网络模块，还有一些其他辅助功能，比如table,log,container等
+目标:高效,灵活，易用的游戏服务器框架，设计上参考netty,mina,grizzly,使用责任链设计模式，易于扩展，所支持的功能如下
 
-## 一:使用
+- 支持tcp,websocket,kcp协议
+- 支持telnet协议
+- 支持json，protobuf，binary编码
+- 支持rpc调用
+- 部分支持future/promise模式(TODO)
+
+## 一:用例
 
 ```go
 package chat
@@ -39,7 +45,7 @@ func StartServer() {
     // step3: create transport and add filters
     tran := tcp.NewTransport()
     tran.AddFilters(
-        filter.NewLog(),
+        filter.NewLogging(),
         filter.NewFrame(frame.NewLine()),
         filter.NewPacket(identity.NewString(), codec.NewJson()),
         filter.NewExecutor())
@@ -54,7 +60,46 @@ func StartServer() {
 }
 ```
 
-## 二:原理
+## 二:常用组合
+
+- 服务器内部通信:
+
+``` go
+tran.AddFilters(
+    filter.NewLogging(),
+    filter.NewFrame(frame.NewVarintLength()),
+    filter.NewPacket(identity.NewServer(), pbcodec.New()),
+    filter.NewExecutor())
+```
+
+- protobuf:
+
+``` go
+tran.AddFilters(
+    filter.NewLogging(),
+    filter.NewFrame(frame.NewVarintLength()),
+    filter.NewPacket(identity.NewInteger(), pbcodec.New()),
+    filter.NewExecutor())
+```
+
+- json:
+
+``` go
+tran.AddFilters(
+    filter.NewLogging(),
+    filter.NewFrame(frame.NewLine()),
+    filter.NewPacket(identity.NewString(), codec.NewJson()),
+    filter.NewExecutor())
+```
+
+- telnet:
+
+``` go
+tran.AddFilters(
+    filter.NewTelnet())
+```
+
+## 三:原理
 
 - Transport和Connection
   - Transport:主要提供Listen和Connect两个接口,用于创建Connection,Connection默认会自动断线重连，如果不需要断线重连,需要设置Transport配置,tran.SetConfig(fairy.CfgReconnectCount, 0)
