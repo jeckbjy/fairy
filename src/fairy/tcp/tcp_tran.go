@@ -54,7 +54,7 @@ func (t *TcpTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.F
 
 	go func() {
 		ok := false
-		for i := 0; i < count_max && !t.IsStopped(); i++ {
+		for i := 0; i <= count_max && !t.IsStopped(); i++ {
 			// logging ??
 			conn, err := net.Dial("tcp", stream_conn.GetHost())
 
@@ -92,6 +92,11 @@ func (t *TcpTran) Connect(host string, kind int) (fairy.Future, error) {
 func (t *TcpTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if t.IsStopped() {
 		return nil, fmt.Errorf("stopped, cannot reconnect")
+	}
+
+	// donot need reconnect
+	if t.CfgReconnectCount == 0 {
+		return nil, nil
 	}
 
 	interval := t.CfgReconnectInterval

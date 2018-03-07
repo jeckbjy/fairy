@@ -18,6 +18,7 @@ func StartServer() {
 	log.Debug("start server")
 	// step1: register message
 	fairy.RegisterMessage(&ChatMsg{})
+
 	// step2: register handler
 	fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
 		req := pkt.GetMessage().(*ChatMsg)
@@ -46,6 +47,7 @@ func StartClient() {
 	log.Debug("start client")
 	// step1: register message
 	fairy.RegisterMessage(&ChatMsg{})
+
 	// step2: register handler
 	fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
 		req := pkt.GetMessage().(*ChatMsg)

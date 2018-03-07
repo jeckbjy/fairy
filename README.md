@@ -25,6 +25,7 @@ func StartServer() {
     log.Debug("start server")
     // step1: register message
     fairy.RegisterMessage(&ChatMsg{})
+
     // step2: register handler
     fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
         req := pkt.GetMessage().(*ChatMsg)
@@ -55,19 +56,21 @@ func StartServer() {
 
 ## 二:原理
 * Transport和Connection
-    - Transport:主要提供Listen和Connect两个接口,用于创建Connection
+    - Transport:主要提供Listen和Connect两个接口,用于创建Connection,Connection默认会自动断线重连，如果不需要断线重连,需要设置Transport配置,tran.SetConfig(fairy.CfgReconnectCount, 0)
     - Connection:类似于net.Conn，主要提供Read，Write，Close等接口，区别是读写是异步完成的
 
  ![Tran和Conn](doc/tran-conn.png)
 
  * FilterChain和Filters
-    - 类似grizzly等，分为InBound和OutBound两种流向
-    InBound: HandleRead,HandleOpen,HandleError
-    OutBound:HandleWrite,HandleClose
+    - filter分为InBound和OutBound两种流向,类似grizzly
+        - InBound: HandleRead,HandleOpen,HandleError
+        - OutBound:HandleWrite,HandleClose
     - 内置的filters
-    FrameFilter,PacketFilter,ExecutorFilter,LoggingFilter,TelnetFilter,ConnectFilter
+        - FrameFilter,PacketFilter,ExecutorFilter,LoggingFilter,TelnetFilter,ConnectFilter
     - 自定义filter
-    filter应该是一个无数据的类，如果需要数据，可以有两种方式：临时Filter之间传递数据，可以存储在FilterContext中，长期持有的，可以存储在Connection中
+        - filter应该是一个无状态的类
+        - 如果需要数据，可以有两种方式：临时Filter之间传递数据，可以存储在FilterContext中,长期持有的,可以存储在Connection中
+    - Error处理:默认error会自动Close Connection,如果不需要Close,需要自定义一个Filter拦截，返回StopAction即可
 
 ![FilterChain](doc/filterchain.png)
 
@@ -82,7 +85,10 @@ func StartServer() {
             4. 自定义消息头，需要实现两个部分,实现Packet接口和Identity接口
         - Codec:   用于消息体的编解码,例如json,protobuf
 
- * 线程处理
+ * 线程模型
+    - 本库并没有强制约定线程的使用,但也提供了一些常用功能
+        - 大部分应用都是多网络线程+1个逻辑线程的模式,因此提供了Exector和ExectorFilter两个类，只要添加到FilterChain末尾则可以实现但逻辑线程模式
+        - Executor可以不止一个线程，比如:某些复杂但又独立的业务操作，可以在注册消息回调时制定一个queueIndex,则可以实现该模块在独立的线程中执行，但要使用者自己保证线程安全
     - 每个Connection都有自己的读写线程,
         - InBound在Connection的读线程中处理,直到转发到ExectorFilter逻辑线程中处理
         - Outbound在调用线程中处理,直到发送字节流时转到Connection的写线程中
