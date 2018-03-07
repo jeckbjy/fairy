@@ -12,18 +12,27 @@ func NewNormal() *BasePacket {
 func EncodeNormal(pkt *BasePacket, buffer *fairy.Buffer) error {
 	writer := NewWriter(buffer)
 	writer.PutId(pkt.GetId())
-	// TODO:others rpc
+	writer.PutUint64(pkt.GetRpcId())
+	writer.PutUint(pkt.GetResult())
 	writer.Flush()
 	return nil
 }
 
 func DecodeNormal(pkt *BasePacket, buffer *fairy.Buffer) error {
 	reader := NewReader(buffer)
-	id, err := reader.GetId()
-	if err != nil {
+	var err error
+	var id uint
+	if id, err = reader.GetId(); err != nil {
 		return err
 	}
 	pkt.SetId(id)
-	// TODO:others rpc
+
+	if pkt.rpcid, err = reader.GetUint64(); err != nil {
+		return err
+	}
+
+	if pkt.result, err = reader.GetUint(); err != nil {
+		return err
+	}
 	return nil
 }

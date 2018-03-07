@@ -19,7 +19,11 @@ type ServerPacket struct {
 
 func EncodeServer(pkt *ServerPacket, buffer *fairy.Buffer) error {
 	writer := NewWriter(buffer)
+	// normal
 	writer.PutId(pkt.GetId())
+	writer.PutUint64(pkt.GetRpcId())
+	writer.PutUint(pkt.GetResult())
+	// other
 	writer.PutUint(pkt.Mode)
 	writer.PutUint64(pkt.Uid)
 	writer.PutStr(pkt.Host)
@@ -35,6 +39,14 @@ func DecodeServer(pkt *ServerPacket, buffer *fairy.Buffer) error {
 		return err
 	}
 	pkt.SetId(id)
+
+	if pkt.rpcid, err = reader.GetUint64(); err != nil {
+		return err
+	}
+
+	if pkt.result, err = reader.GetUint(); err != nil {
+		return err
+	}
 
 	if pkt.Mode, err = reader.GetUint(); err != nil {
 		return err

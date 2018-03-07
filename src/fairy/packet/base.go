@@ -13,9 +13,9 @@ func NewBase() *BasePacket {
 type BasePacket struct {
 	id     uint
 	name   string
-	msg    interface{}
 	result uint
 	rpcid  uint64
+	msg    interface{}
 }
 
 func (self *BasePacket) Reset() {
