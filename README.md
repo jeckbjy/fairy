@@ -167,6 +167,8 @@ tran.AddFilters(
   - fairy-websocket: 依赖 github.com/gorilla/websocket
 
 - 参考框架
+  - grizzly: https://javaee.github.io/grizzly/
+    - 非常不错的java网络库框架
   - cellnet: https://github.com/davyxu/cellnet 
     - 功能很完善的go服务器框架，扩展性也还不错,支持websocket,tcp,kcp,以及各种编码协议,整体设计上还是很不错的服务器框架
   - leaf: https://github.com/name5566/leaf
