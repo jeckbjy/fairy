@@ -7,6 +7,7 @@ import (
 	"reflect"
 )
 
+var gErrorHandler Handler
 var gDispatcher *Dispatcher
 
 func GetDispatcher() *Dispatcher {
@@ -17,25 +18,37 @@ func GetDispatcher() *Dispatcher {
 	return gDispatcher
 }
 
+func error_cb(conn Conn, pkt Packet) {
+	log.Error("cannot find handler:name=%+v,id=%+v,rpcid=%+v",
+		pkt.GetName(),
+		pkt.GetId(),
+		pkt.GetRpcId())
+}
+
 func NewDispatcher() *Dispatcher {
+	if gErrorHandler == nil {
+		gErrorHandler = &HandlerHolder{cb: error_cb}
+	}
+
 	dispatcher := &Dispatcher{}
 	dispatcher.nameMap = make(HandlerNameMap)
 	dispatcher.idMap = make(HandlerIdMap)
+	dispatcher.errhandler = gErrorHandler
 	return dispatcher
 }
 
 //////////////////////////////////////////////////////////
 // 注册回调函数
 //////////////////////////////////////////////////////////
-func RegisterHandler(key interface{}, cb HandlerCallback) {
+func RegisterHandler(key interface{}, cb HandlerCB) {
 	RegisterHandlerEx(key, cb, 0)
 }
 
-func RegisterHandlerEx(key interface{}, cb HandlerCallback, queueId int) {
+func RegisterHandlerEx(key interface{}, cb HandlerCB, queueId int) {
 	GetDispatcher().Regsiter(key, &HandlerHolder{cb: cb, queueId: queueId})
 }
 
-func RegisterUncaughtHandler(cb HandlerCallback) {
+func RegisterUncaughtHandler(cb HandlerCB) {
 	GetDispatcher().SetUncaughtHandler(&HandlerHolder{cb: cb, queueId: 0})
 }
 
@@ -47,9 +60,9 @@ type Handler interface {
 	Invoke(conn Conn, packet Packet)
 }
 
-type HandlerCallback func(Conn, Packet)
+type HandlerCB func(Conn, Packet)
 type HandlerHolder struct {
-	cb      HandlerCallback
+	cb      HandlerCB
 	queueId int
 }
 
@@ -74,10 +87,11 @@ const (
 )
 
 type Dispatcher struct {
-	nameMap  HandlerNameMap
-	idMap    HandlerIdMap
-	idArray  []Handler
-	uncaught Handler
+	nameMap    HandlerNameMap
+	idMap      HandlerIdMap
+	idArray    []Handler
+	uncaught   Handler
+	errhandler Handler
 }
 
 /**
@@ -144,6 +158,19 @@ func (self *Dispatcher) GetHandler(id uint, name string) Handler {
 	return self.GetHandlerByName(name)
 }
 
+func (self *Dispatcher) GetFinalHandler(id uint, name string) (Handler, bool) {
+	h := self.GetHandler(id, name)
+	if h != nil {
+		return h, true
+	}
+
+	if self.uncaught != nil {
+		return self.uncaught, false
+	}
+
+	return self.errhandler, false
+}
+
 func (self *Dispatcher) GetHandlerById(id uint) Handler {
 	if id == 0 || id > INVOKER_ID_MAX {
 		return nil
@@ -168,4 +195,12 @@ func (self *Dispatcher) SetUncaughtHandler(handler Handler) {
 
 func (self *Dispatcher) GetUncaughtHandler() Handler {
 	return self.uncaught
+}
+
+func (self *Dispatcher) GetErrorHandler() Handler {
+	return self.errhandler
+}
+
+func (self *Dispatcher) SetErrorHandler(h Handler) {
+	self.errhandler = h
 }

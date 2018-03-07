@@ -113,3 +113,10 @@ func Start(ts int64, cb Callback) *Timer {
 	t.Start(ts)
 	return t
 }
+
+// 异步，不需要post主线程中执行
+func StartAsync(ts int64, cb Callback) *Timer {
+	t := New(GetAsyncTimerEngine(), cb)
+	t.Start(ts)
+	return t
+}

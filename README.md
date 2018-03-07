@@ -115,7 +115,8 @@ func StartServer() {
   - fairy:不依赖任何库,但集成了一些开源库
     - inlist: github.com/ionous/container/inlist
     - shortid:github.com/teris-io/shortid
-      - go-colortext:github.com/daviddengcn/go-colortext
+    - sonyflake:https://github.com/sony/sonyflake
+    - go-colortext:github.com/daviddengcn/go-colortext
   - fairy-kcp:依赖 github.com/xtaci/kcp-go
   - fairy-protobuf: 依赖 github.com/golang/protobuf
   - fairy-websocket: 依赖 github.com/gorilla/websocket

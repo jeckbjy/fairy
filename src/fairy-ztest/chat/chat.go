@@ -32,7 +32,7 @@ func StartServer() {
 	// step3: create transport and add filters
 	tran := tcp.NewTransport()
 	tran.AddFilters(
-		filter.NewLog(),
+		filter.NewLogging(),
 		filter.NewFrame(frame.NewLine()),
 		filter.NewPacket(identity.NewString(), codec.NewJson()),
 		filter.NewExecutor())
@@ -57,7 +57,7 @@ func StartClient() {
 	// step3: create transport and add filters
 	tran := tcp.NewTransport()
 	tran.AddFilters(
-		filter.NewLog(),
+		filter.NewLogging(),
 		filter.NewFrame(frame.NewLine()),
 		filter.NewPacket(identity.NewString(), codec.NewJson()),
 		filter.NewExecutor())

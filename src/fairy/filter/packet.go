@@ -4,6 +4,7 @@ import (
 	"fairy"
 	"fairy/base"
 	"fairy/packet"
+	"fairy/rpc"
 )
 
 func NewPacket(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
@@ -42,12 +43,20 @@ func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 		return ctx.GetNextAction()
 	}
 
+	// find handler
+	var handler fairy.Handler
+	if pkt.GetRpcId() != 0 {
+		handler = rpc.PopHandler(pkt.GetRpcId())
+	}
+
 	// UncaughtHandler, donot need codec
-	handler := self.Dispatcher.GetHandler(pkt.GetId(), pkt.GetName())
 	if handler == nil {
-		uncaught := self.Dispatcher.GetUncaughtHandler()
-		ctx.SetHandler(uncaught)
-		return ctx.GetNextAction()
+		var ok bool
+		handler, ok = self.Dispatcher.GetFinalHandler(pkt.GetId(), pkt.GetName())
+		if !ok {
+			ctx.SetHandler(handler)
+			return ctx.GetNextAction()
+		}
 	}
 
 	// create msg

@@ -5,6 +5,7 @@ import (
 	"fairy/base"
 	"fairy/exec"
 	"fairy/log"
+	"fairy/rpc"
 )
 
 func NewExecutor() *ExecutorFilter {
@@ -28,33 +29,31 @@ type ExecutorFilter struct {
 func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	msg := ctx.GetMessage()
 	conn := ctx.GetConnection()
-	packet, ok := msg.(fairy.Packet)
+	pkt, ok := msg.(fairy.Packet)
 	if !ok {
 		return ctx.GetNextAction()
 	}
 
-	// check rpc
-	if packet.GetSerialId() > 0 {
-
+	handler := ctx.GetHandler()
+	if handler == nil {
+		// 通常情况下,在PacketFilter中必然返回了handler,除非自定义了Filter
+		if pkt.GetRpcId() > 0 {
+			handler = rpc.PopHandler(pkt.GetRpcId())
+		}
+		if handler == nil {
+			handler, _ = self.Dispatcher.GetFinalHandler(pkt.GetId(), pkt.GetName())
+		}
 	}
 
-	// check handler
-	handler := self.GetHandler(packet.GetId(), packet.GetName())
 	if handler == nil {
-		handler = self.GetUncaughtHandler()
-	}
-
-	if handler == nil {
-		// TODO:throw error
-		// ctx.ThrowError(fmt)
-		log.Error("cannot find handler:name=%+v,id=%+v", packet.GetName(), packet.GetId())
+		log.Error("cannot find handler:name=%+v,id=%+v", pkt.GetName(), pkt.GetId())
 		return ctx.GetStopAction()
 	}
 
 	if self.Executor != nil {
-		self.DispatchEx(exec.NewPacketEvent(conn, packet, handler), handler.GetQueueId())
+		self.DispatchEx(exec.NewPacketEvent(conn, pkt, handler), handler.GetQueueId())
 	} else {
-		handler.Invoke(conn, packet)
+		handler.Invoke(conn, pkt)
 	}
 
 	return ctx.GetNextAction()

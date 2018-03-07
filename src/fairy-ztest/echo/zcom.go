@@ -45,7 +45,7 @@ func NewTransport(net_mode string, msg_mode string) fairy.Transport {
 	}
 
 	tran.AddFilters(
-		filter.NewLog(),
+		filter.NewLogging(),
 		filter.NewFrame(zframe),
 		filter.NewPacket(zidentity, zcodec),
 		filter.NewExecutor())
@@ -53,7 +53,7 @@ func NewTransport(net_mode string, msg_mode string) fairy.Transport {
 	return tran
 }
 
-func RegisterMsg(msg_mode string, cb fairy.HandlerCallback) {
+func RegisterMsg(msg_mode string, cb fairy.HandlerCB) {
 	switch msg_mode {
 	case "pb":
 		// protobuf
@@ -64,7 +64,7 @@ func RegisterMsg(msg_mode string, cb fairy.HandlerCallback) {
 	}
 }
 
-func Register(cb fairy.HandlerCallback, msg interface{}, id int) {
+func Register(cb fairy.HandlerCB, msg interface{}, id int) {
 	if id == 0 {
 		fairy.RegisterMessage(msg)
 		fairy.RegisterHandler(msg, cb)
