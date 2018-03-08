@@ -19,6 +19,7 @@ type Timer struct {
 	Count     int          // 记录触发次数
 	Tag       int          // 自定义Tag
 	Data      interface{}  // 自定义数据
+	running   bool         // 是否在运行中
 }
 
 func (self *Timer) SetEngine(e *TimerEngine) {
@@ -69,7 +70,7 @@ func (self *Timer) Restart() {
 }
 
 func (self *Timer) Start(ts int64) {
-	if !self.IsRunning() {
+	if !self.isRunning() {
 		if ts < TIMER_DELAY_MAX {
 			self.Delay = int(ts)
 			self.left = self.Delay
@@ -82,13 +83,17 @@ func (self *Timer) Start(ts int64) {
 }
 
 func (self *Timer) Stop() {
-	if self.IsRunning() {
+	if self.isRunning() {
 		self.engine.DelTimer(self)
 	}
 }
 
-func (self *Timer) IsRunning() bool {
-	return self.List() != nil
+func (self *Timer) isRunning() bool {
+	return self.running
+}
+
+func (self *Timer) setRunning(flag bool) {
+	self.running = flag
 }
 
 func Sec(t int64) int64 {

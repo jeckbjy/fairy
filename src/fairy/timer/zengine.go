@@ -94,16 +94,17 @@ func (self *TimerEngine) AddTimer(timer *Timer) {
 	if timer.Timestamp > self.timestamp {
 		self.mutex.Lock()
 		atomic.AddInt32(&self.count, 1)
+		timer.setRunning(true)
 		self.push(timer)
-		// log.Debug("add timer:%+v", timer.Timestamp-self.start)
 		self.mutex.Unlock()
 	}
 }
 
 func (self *TimerEngine) DelTimer(timer *Timer) {
 	self.mutex.Lock()
-	if timer.IsRunning() {
+	if timer.isRunning() {
 		atomic.AddInt32(&self.count, -1)
+		timer.setRunning(false)
 		timer.List().Remove(timer)
 	}
 	self.mutex.Unlock()
@@ -163,8 +164,9 @@ func (self *TimerEngine) UpdateBy(newTime int64) {
 		timer := iter.(*Timer)
 		iter = inlist.Next(iter)
 		pendings.Remove(timer)
-		timer.Call()
+		timer.setRunning(false)
 		atomic.AddInt32(&self.count, -1)
+		timer.Call()
 	}
 }
 
@@ -242,15 +244,16 @@ func (self *TimerEngine) Invoke() {
 		timer := iter.(*Timer)
 		iter = inlist.Next(iter)
 		pendings.Remove(timer)
-
-		timer.Call()
 		atomic.AddInt32(&self.count, -1)
+		timer.setRunning(false)
+		timer.Call()
 	}
 }
 
 func (self *TimerEngine) push(timer *Timer) {
 	if timer.Timestamp <= self.timestamp {
 		// panic("bad timer")
+		timer.setRunning(false)
 		atomic.AddInt32(&self.count, -1)
 		return
 	}
