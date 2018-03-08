@@ -17,8 +17,12 @@ const (
 )
 
 func NewLogging() *LoggingFilter {
+	return NewLoggingEx(LoggingFilterConnect | LoggingFilterClose | LoggingFilterError)
+}
+
+func NewLoggingEx(mask int) *LoggingFilter {
 	lf := &LoggingFilter{}
-	lf.mask = LoggingFilterConnect | LoggingFilterClose | LoggingFilterError
+	lf.mask = uint8(mask)
 	return lf
 }
 

@@ -77,29 +77,17 @@ func (wt *WSTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.F
 	wt.AddGroup()
 	stream_conn := new_conn.(*snet.StreamConn)
 	host := stream_conn.GetHost()
-	count_max := wt.CfgReconnectCount
 
 	go func() {
-		ok := false
-		for i := 0; i <= count_max && !wt.IsStopped(); i++ {
-			conn, _, err := websocket.DefaultDialer.Dial(host, nil)
-
-			if promise.IsCanceled() {
-				break
-			}
-
+		conn, _, err := websocket.DefaultDialer.Dial(host, nil)
+		if !promise.IsCanceled() {
 			if err == nil {
-				ok = true
-				promise.SetSuccess()
 				stream_conn.Open(conn)
-				break
+				promise.SetSuccess()
 			} else {
 				stream_conn.Error(err)
+				promise.SetFailure()
 			}
-		}
-
-		if !ok {
-			promise.SetFailure()
 		}
 
 		wt.Done()
@@ -124,11 +112,6 @@ func (wt *WSTran) Connect(host string, kind int) (fairy.Future, error) {
 func (wt *WSTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if wt.IsStopped() {
 		return nil, fmt.Errorf("stopped, cannot reconnect")
-	}
-
-	// donot need reconnect
-	if wt.CfgReconnectCount == 0 {
-		return nil, nil
 	}
 
 	interval := wt.CfgReconnectInterval

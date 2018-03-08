@@ -21,20 +21,21 @@ func (wc *WSConn) Open(conn interface{}) {
 	wc.Conn = conn.(*websocket.Conn)
 }
 
-func (wc *WSConn) Read(cap int) ([]byte, error) {
+func (wc *WSConn) Read(reader *fairy.Buffer, cap int) error {
 	mtype, data, err := wc.ReadMessage()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	switch mtype {
 	case websocket.TextMessage, websocket.BinaryMessage:
-		return data, nil
+		reader.Append(data)
+		return nil
 	case websocket.CloseMessage:
-		return nil, fmt.Errorf("close")
+		return fmt.Errorf("close")
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (wc *WSConn) Write(buf []byte) error {

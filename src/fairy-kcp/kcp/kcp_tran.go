@@ -50,29 +50,17 @@ func (kt *KcpTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.
 	kt.AddGroup()
 	stream_conn := new_conn.(*snet.StreamConn)
 	host := stream_conn.GetHost()
-	count_max := kt.CfgReconnectCount
 
 	go func() {
-		ok := false
-		for i := 0; i <= count_max && !kt.IsStopped(); i++ {
-			conn, err := kcpgo.DialWithOptions(host, nil, 10, 3)
-
-			if promise.IsCanceled() {
-				break
-			}
-
+		conn, err := kcpgo.DialWithOptions(host, nil, 10, 3)
+		if !promise.IsCanceled() {
 			if err == nil {
-				ok = true
-				promise.SetSuccess()
 				stream_conn.Open(conn)
-				break
+				promise.SetSuccess()
 			} else {
 				stream_conn.Error(err)
+				promise.SetFailure()
 			}
-		}
-
-		if !ok {
-			promise.SetFailure()
 		}
 
 		kt.Done()
@@ -91,11 +79,6 @@ func (kt *KcpTran) Connect(host string, kind int) (fairy.Future, error) {
 func (kt *KcpTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if kt.IsStopped() {
 		return nil, fmt.Errorf("stopped, cannot reconnect")
-	}
-
-	// donot need reconnect
-	if kt.CfgReconnectCount == 0 {
-		return nil, nil
 	}
 
 	interval := kt.CfgReconnectInterval

@@ -15,7 +15,7 @@ func NewConn(channel IChannel, tran fairy.Transport, side bool, kind int) *Strea
 }
 
 type IChannel interface {
-	Read(cap int) ([]byte, error)
+	Read(reader *fairy.Buffer, cap int) error
 	Write(buf []byte) error
 	Open(conn interface{})
 	Close() error
@@ -68,8 +68,24 @@ func (sc *StreamConn) Open(conn interface{}) {
 	go sc.recvThread()
 }
 
+func (sc *StreamConn) tryReconnect() {
+	if !sc.IsClientSide() {
+		return
+	}
+
+	if !sc.GetConfig(fairy.CfgReconnectOpen).(bool) {
+		return
+	}
+	sc.GetTransport().Reconnect(sc)
+}
+
 func (sc *StreamConn) Close() {
-	if !sc.SwapState(fairy.ConnStateOpen, fairy.ConnStateConnecting) {
+	if sc.IsState(fairy.ConnStateClosed) {
+		sc.tryReconnect()
+		return
+	}
+
+	if !sc.SwapState(fairy.ConnStateOpen, fairy.ConnStateClosing) {
 		return
 	}
 
@@ -83,9 +99,7 @@ func (sc *StreamConn) Close() {
 		//
 		fairy.GetConnMgr().Remove(sc.GetConnId())
 		// reconnect
-		if sc.IsClientSide() {
-			sc.GetTransport().Reconnect(sc)
-		}
+		sc.tryReconnect()
 	}()
 }
 
@@ -127,13 +141,12 @@ func (sc *StreamConn) recvThread() {
 
 	bufSize := sc.GetConfig(fairy.CfgReaderBufferSize).(int)
 	for {
-		data, err := sc.channel.Read(bufSize)
+		err := sc.channel.Read(sc.rbuf, bufSize)
 		if err != nil {
 			sc.HandleError(sc, err)
 			break
 		}
 
-		sc.rbuf.Append(data)
 		sc.HandleRead(sc)
 	}
 

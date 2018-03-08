@@ -8,6 +8,7 @@ import (
 	"fairy/identity"
 	"fairy/log"
 	"fairy/tcp"
+	"fairy/timer"
 )
 
 type ChatMsg struct {
@@ -32,15 +33,13 @@ func StartServer() {
 	// step3: create transport and add filters
 	tran := tcp.NewTransport()
 	tran.AddFilters(
-		filter.NewLogging(),
+		filter.NewLoggingEx(filter.LoggingFilterAll),
 		filter.NewFrame(frame.NewLine()),
 		filter.NewPacket(identity.NewString(), codec.NewJson()),
 		filter.NewExecutor())
 
 	// step4: listen or connect
 	tran.Listen(":8080", 0)
-	// step5: wait finish
-	fairy.WaitExit()
 }
 
 func StartClient() {
@@ -54,10 +53,11 @@ func StartClient() {
 		log.Debug("server msg:%+v", req.Content)
 	})
 
+	var gConn fairy.Conn
 	// step3: create transport and add filters
 	tran := tcp.NewTransport()
 	tran.AddFilters(
-		filter.NewLogging(),
+		filter.NewLoggingEx(filter.LoggingFilterAll),
 		filter.NewFrame(frame.NewLine()),
 		filter.NewPacket(identity.NewString(), codec.NewJson()),
 		filter.NewExecutor())
@@ -67,10 +67,18 @@ func StartClient() {
 		req := &ChatMsg{}
 		req.Content = "hello word!"
 		conn.Send(req)
+		gConn = conn
 	}))
+
+	// add timer for send message
+	timer.Start(1000, func(t *timer.Timer) {
+		log.Debug("Ontimeout")
+		req := &ChatMsg{}
+		req.Content = "hello word!"
+		gConn.Send(req)
+		t.Restart()
+	})
 
 	// step4: listen or connect
 	tran.Connect("localhost:8080", 0)
-	// step5: wait finish
-	fairy.WaitExit()
 }

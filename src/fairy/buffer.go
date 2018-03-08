@@ -60,6 +60,40 @@ func (self *Buffer) GetMark() int {
 	return self.mark
 }
 
+// GetSpace = back of (capacity - length)
+func (self *Buffer) GetSpace() []byte {
+	if self.datas.Len() == 0 {
+		return nil
+	}
+
+	data := self.datas.Back().Value.([]byte)
+	caps := cap(data)
+	leng := len(data)
+	if leng == caps {
+		return nil
+	}
+
+	return data[leng:caps]
+}
+
+// ExtendSpace 将最后一个扩展count个字节,配合GetSpace使用
+func (self *Buffer) ExtendSpace(count int) error {
+	if self.datas.Len() == 0 {
+		return fmt.Errorf("buffer extend space, but back data")
+	}
+
+	back := self.datas.Back()
+	data := back.Value.([]byte)
+	leng := len(data)
+	back.Value = data[0 : leng+count]
+
+	self.length += count
+	self.position = self.length
+	self.element = nil
+	return nil
+}
+
+// Merge 合并两个buffer为一个
 func (self *Buffer) Merge(other *Buffer) {
 	self.datas.PushBackList(other.datas)
 	self.length += other.length
@@ -181,7 +215,7 @@ func (self *Buffer) Prepend(data []byte) {
 	}
 }
 
-// io.SeekStart
+// Seek 移动当前位置
 func (self *Buffer) Seek(offset int, whence int) error {
 	var pos int
 	switch whence {
@@ -264,6 +298,7 @@ func (self *Buffer) Seek(offset int, whence int) error {
 	return nil
 }
 
+// Clear 清空数据
 func (self *Buffer) Clear() {
 	self.datas.Init()
 	self.length = 0
@@ -273,6 +308,7 @@ func (self *Buffer) Clear() {
 	self.mark = 0
 }
 
+// Swap 交换两个buffer
 func (self *Buffer) Swap(other *Buffer) {
 	temp := Buffer{}
 	temp = *other
@@ -280,18 +316,19 @@ func (self *Buffer) Swap(other *Buffer) {
 	*self = temp
 }
 
-// 回到头部
+// Rewind 回到头部
 func (self *Buffer) Rewind() {
 	self.position = 0
 	self.element = self.datas.Front()
 	self.offset = 0
 }
 
+// IndexOf 从当前位置开始查询字符串位置
 func (self *Buffer) IndexOf(key string) int {
 	return self.IndexOfLimit(key, -1)
 }
 
-// 从当前位置查找key,最长搜索limit个字节(-1无限制)
+// IndexOfLimit 从当前位置查找key,最长搜索limit个字节(-1无限制)
 func (self *Buffer) IndexOfLimit(key string, limit int) int {
 	self.checkCursor()
 	n := len(key)
@@ -359,6 +396,7 @@ func (self *Buffer) match(elem *list.Element, offset int, key string) bool {
 	return true
 }
 
+// Peek 获取数据但不修改当前位置
 func (self *Buffer) Peek(buffer []byte) (int, error) {
 	length := len(buffer)
 	if self.position+length > self.length {
@@ -375,6 +413,7 @@ func (self *Buffer) Peek(buffer []byte) (int, error) {
 	return length, nil
 }
 
+// Read 读取数据并移动当前位置
 func (self *Buffer) Read(buffer []byte) (int, error) {
 	length := len(buffer)
 	if self.position+length > self.length {
@@ -431,6 +470,7 @@ func (self *Buffer) grow(count int) {
 	self.length += count
 }
 
+// Write 实现io.Writer接口
 func (self *Buffer) Write(bufffer []byte) (int, error) {
 	self.checkCursor()
 
@@ -453,16 +493,6 @@ func (self *Buffer) Write(bufffer []byte) (int, error) {
 	self.position += length
 
 	return length, nil
-}
-
-func (self *Buffer) SendAll(writer io.Writer) error {
-	for iter := self.datas.Front(); iter != nil; iter = iter.Next() {
-		data := iter.Value.([]byte)
-		if _, err := writer.Write(data); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (self *Buffer) Bytes() []byte {
@@ -489,14 +519,14 @@ func (self *Buffer) ReadToEnd() []byte {
 
 	self.Concat()
 	data := self.datas.Front().Value.([]byte)
-	if self.position == 0 {
-		return data
-	} else {
+	if self.position != 0 {
 		return data[self.position:]
 	}
+
+	return data
 }
 
-// for io.ByteReader
+// ReadByte 实现接口io.ByteReader
 func (self *Buffer) ReadByte() (byte, error) {
 	if self.position >= self.length {
 		return 0, fmt.Errorf("ReadByte overflow!")
@@ -507,14 +537,12 @@ func (self *Buffer) ReadByte() (byte, error) {
 	result := self.element.Value.([]byte)[self.offset]
 	self.Seek(1, io.SeekCurrent)
 	return result, nil
-	// data := self.element.Value.([]byte)
-	// return data[self.offset], nil
 }
 
-// read until key and remove key
+// ReadUntil 读取到key位置
 func (self *Buffer) ReadUntil(key byte) (string, error) {
 	if self.position == self.length {
-		return "", fmt.Errorf("buffer end,cannot find key=%+v", key)
+		return "", fmt.Errorf("buffer end,cannot find key=%+v", string(key))
 	}
 
 	self.checkCursor()
@@ -530,7 +558,7 @@ func (self *Buffer) ReadUntil(key byte) (string, error) {
 	return string(data), nil
 }
 
-// \r\n
+// ReadLine 读取到\n或\r\n为止
 func (self *Buffer) ReadLine() (*Buffer, error) {
 	delimiter := 1
 
@@ -543,7 +571,7 @@ func (self *Buffer) ReadLine() (*Buffer, error) {
 		self.Seek(-1, io.SeekCurrent)
 		if ch, _ := self.ReadByte(); ch == '\r' {
 			delimiter = 2
-			pos -= 1
+			pos--
 			self.Seek(-1, io.SeekCurrent)
 		}
 	}

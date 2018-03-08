@@ -1,10 +1,13 @@
 package chat
 
-import "flag"
+import (
+	"fairy"
+	"flag"
+)
 
 func Test() {
 	// example: ./test -s server -n tcp -m json
-	pside := flag.String("s", "client", "test mode:server or client")
+	pside := flag.String("s", "server", "test mode:server or client")
 	flag.Parse()
 
 	if *pside == "server" {
@@ -12,4 +15,6 @@ func Test() {
 	} else {
 		StartClient()
 	}
+
+	fairy.WaitExit()
 }

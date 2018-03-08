@@ -7,6 +7,7 @@ const (
 	ConnStateClosed     = 0
 	ConnStateOpen       = 1
 	ConnStateConnecting = 2
+	ConnStateClosing    = 3
 )
 
 // Connection has properties Type ConnId,Uid,OpenId,Data,State,Side and so on

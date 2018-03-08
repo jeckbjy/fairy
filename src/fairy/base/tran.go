@@ -2,8 +2,6 @@ package base
 
 import (
 	"fairy"
-	"fairy/util"
-	"math"
 )
 
 type TransportEx interface {
@@ -14,41 +12,6 @@ type TransportEx interface {
 type Transport struct {
 	Config
 	filters fairy.FilterChain
-}
-
-func (self *Transport) SetConfig(key *fairy.AttrKey, val interface{}) {
-	switch key {
-	case fairy.CfgReconnectCount:
-		if ret, err := util.ConvInt(val); err == nil {
-			self.CfgReconnectCount = ret
-			if self.CfgReconnectCount < 0 {
-				self.CfgReconnectCount = math.MaxInt32
-			}
-		}
-	case fairy.CfgReconnectInterval:
-		if ret, err := util.ConvInt(val); err == nil {
-			self.CfgReconnectInterval = ret
-		}
-	case fairy.CfgReaderBufferSize:
-		if ret, err := util.ConvInt(val); err == nil {
-			self.CfgReaderBufferSize = ret
-		}
-	default:
-		self.SetAttr(key, val)
-	}
-}
-
-func (self *Transport) GetConfig(key *fairy.AttrKey) interface{} {
-	switch key {
-	case fairy.CfgReconnectCount:
-		return self.CfgReconnectCount
-	case fairy.CfgReconnectInterval:
-		return self.CfgReconnectInterval
-	case fairy.CfgReaderBufferSize:
-		return self.CfgReaderBufferSize
-	default:
-		return self.GetAttr(key)
-	}
 }
 
 func (self *Transport) SetFilterChain(filters fairy.FilterChain) {

@@ -19,14 +19,26 @@ func (kc *KcpConn) Open(conn interface{}) {
 	kc.Conn = conn.(net.Conn)
 }
 
-func (kc *KcpConn) Read(cap int) ([]byte, error) {
-	data := make([]byte, cap)
-	n, err := kc.Conn.Read(data)
-	if err != nil {
-		return nil, err
+func (kc *KcpConn) Read(reader *fairy.Buffer, cap int) error {
+	data := reader.GetSpace()
+	hasSpace := true
+	if data == nil {
+		data = make([]byte, cap)
+		hasSpace = false
 	}
 
-	return data[:n], nil
+	n, err := kc.Conn.Read(data)
+	if err != nil {
+		return err
+	}
+
+	if hasSpace {
+		reader.ExtendSpace(n)
+	} else {
+		reader.Append(data[:n])
+	}
+
+	return nil
 }
 
 func (kc *KcpConn) Write(buf []byte) error {

@@ -6,6 +6,7 @@
 - 支持telnet协议
 - 支持protobuf,json,xml,gob编码
 - 支持rpc调用
+- 支持灵活的线程模型以及默认的消息回调处理
 - 支持高效定时器
 - 部分支持future/promise模式(TODO)
 
@@ -137,7 +138,7 @@ tran.AddFilters(
     - 大部分应用都是多网络线程+1个逻辑线程的模式,因此提供了Exector和ExectorFilter两个类，只要添加到FilterChain末尾则可以实现单逻辑线程模式
     - Executor可以不止一个线程，比如:某些复杂但又独立的业务操作，可以在注册消息回调时制定一个queueIndex,则可以实现该模块在独立的线程中执行，但要使用者自己保证线程安全
     - Executor还提供了一个Go方法，他的功能是某个协程函数执行结束后，会在主线程中回调一个函数
-  - 每个Connection都有自己的读写线程,
+  - 每个Connection都有自己的读写线程
     - InBound在Connection的读线程中处理,直到转发到ExectorFilter逻辑线程中处理
     - Outbound在调用线程中处理,直到发送字节流时转到Connection的写线程中
   - 其他线程：Timer线程，Executor线程,Log线程等,
