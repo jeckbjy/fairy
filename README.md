@@ -160,13 +160,13 @@ tran.AddFilters(
 
 - 依赖库
   - fairy:不依赖任何库,但集成了一些开源库
-    - inlist: github.com/ionous/container/inlist
-    - shortid:github.com/teris-io/shortid
+    - inlist: https://github.com/ionous/container
+    - shortid: https://github.com/teris-io/shortid
     - sonyflake:https://github.com/sony/sonyflake
-    - go-colortext:github.com/daviddengcn/go-colortext
-  - fairy-kcp:依赖 github.com/xtaci/kcp-go
-  - fairy-protobuf: 依赖 github.com/golang/protobuf
-  - fairy-websocket: 依赖 github.com/gorilla/websocket
+    - go-colortext:https://github.com/daviddengcn/go-colortext
+  - fairy-kcp:依赖 https://github.com/xtaci/kcp-go
+  - fairy-protobuf: 依赖 https://github.com/golang/protobuf
+  - fairy-websocket: 依赖 https://github.com/gorilla/websocket
 
 - 参考框架
   - grizzly: https://javaee.github.io/grizzly/

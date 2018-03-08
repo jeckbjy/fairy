@@ -8,14 +8,14 @@
 // Package inlist implements an intrusive doubly linked list.
 //
 // To iterate over a list (where l is a *List):
-//	for e := l.Front(); e != nil; e = inlist.Next(e) {
+//	for e := l.Front(); e != nil; e = e.Next() {
 //		// do something with e
 //	}
 //
+// 修改了部分接口，以便和标准的一致
+// 只有MoveFrontList和MoveBackList和标准不一样，因为标准是拷贝，这里是移动合并
 package inlist
 
-// Element mimics golang's container/list/Element; this implements the ilist/inlist/Intrusive interface to allow the storage of generic values in inlist.List.
-// see also: NewElement(), and Value()
 type Element struct {
 	Hook
 	Value interface{}
@@ -26,261 +26,262 @@ func NewElement(v interface{}) Intrusive {
 	return &Element{Value: v}
 }
 
-// Value returns the contents of an element created via NewElement.
-// This panics if i is nil, or of any type other than Element.
 func Value(i Intrusive) interface{} {
 	return i.(*Element).Value
 }
 
-// Hook provides an implementation of Intrusive with no additional data. Use this as an anonymous member of a struct to create an intrusive element.
-// ( Alternatively, you can implement the Intrusive interface yourself. )
-//
-// For example:
-// type MyElement struct {
-// 	inlist.Hook
-// 	MyData int // or whatever data you need.
-// }
-// l:= inlist.New()
-// l.PushBack(&MyElement{MyData:23})
-//
+// Next old code,do not need!!!
+func Next(e Intrusive) (ret Intrusive) {
+	return e.Next()
+}
+
+// Prev old code,do not need!!!
+func Prev(e Intrusive) (ret Intrusive) {
+	return e.Prev()
+}
+
+type Intrusive interface {
+	Prev() Intrusive
+	Next() Intrusive
+	List() *List
+	// use for internal
+	getPrev() Intrusive
+	getNext() Intrusive
+	setPrev(e Intrusive)
+	setNext(e Intrusive)
+	getList() *List
+	setList(l *List)
+}
+
 type Hook struct {
 	prev, next Intrusive
 	list       *List
 }
 
-// List implements Intrusive.List: returning the list pointer provided by SetElements().
-func (s *Hook) List() *List {
-	return s.list
-}
-
-// Predecessor implements Intrusive.Predecessor: returning the prev sibling provided by SetElements().
-func (s *Hook) Predecessor() Intrusive {
-	return s.prev
-}
-
-// Successor implements Intrusive.Successor: returning the next sibling provided by SetElements().
-func (s *Hook) Successor() Intrusive {
-	return s.next
-}
-
-// SetElements implements Intrusive.SetElements: storing the passed values without checking or changing them.
-func (s *Hook) SetElements(l *List, p Intrusive, n Intrusive) {
-	s.list, s.prev, s.next = l, p, n
-}
-
-// Intrusive provides an interface for intrusive linked list manipulation.
-// Use inlist.Next(), inlist.Prev() for list traversal.
-type Intrusive interface {
-	// List, return the list given via SetElements.
-	List() *List
-	// Predecessor, return the prev element given via SetElements.
-	Predecessor() Intrusive
-	// Successor, return the next element given via SetElements.
-	Successor() Intrusive
-	// SetElements, record the passed values as given.
-	SetElements(list *List, prev Intrusive, next Intrusive)
-}
-
-// Next returns the next list element or nil.
-// Unlike e.Successor, this accounts for the list's sentinel.
-func Next(e Intrusive) (ret Intrusive) {
-	if list := e.List(); list != nil {
-		if n := e.Successor(); n != &list.root {
-			ret = n
-		}
+func (h *Hook) Prev() Intrusive {
+	if p := h.prev; h.list != nil && p != &h.list.root {
+		return p
 	}
-	return
+
+	return nil
 }
 
-// Prev returns the previous list element or nil.
-// Unlike e.Predecessor, this accounts for the list's sentinel.
-func Prev(e Intrusive) (ret Intrusive) {
-	if list := e.List(); list != nil {
-		if p := e.Predecessor(); p != &list.root {
-			ret = p
-		}
+func (h *Hook) Next() Intrusive {
+	if p := h.next; h.list != nil && p != &h.list.root {
+		return p
 	}
-	return
+
+	return nil
 }
 
-// List is an intrusive doubly linked list, implemented as a ring.
-// The zero value for List is empty and ready to use.
+func (h *Hook) List() *List {
+	return h.list
+}
+
+func (h *Hook) getPrev() Intrusive {
+	return h.prev
+}
+
+func (h *Hook) setPrev(e Intrusive) {
+	h.prev = e
+}
+
+func (h *Hook) getNext() Intrusive {
+	return h.next
+}
+
+func (h *Hook) setNext(e Intrusive) {
+	h.next = e
+}
+
+func (h *Hook) getList() *List {
+	return h.list
+}
+
+func (h *Hook) setList(l *List) {
+	h.list = l
+}
+
 type List struct {
-	root Hook // marker for start,end of the list
-	cnt  int  // current list length excluding the sentinel
+	root Hook
+	len  int
 }
 
-// Init initializes or clears list l.
 func (l *List) Init() *List {
 	l.root.next = &l.root
 	l.root.prev = &l.root
-	l.cnt = 0
+	l.len = 0
 	return l
 }
 
-// New returns an initialized list.
 func New() *List {
 	return new(List).Init()
 }
 
-// Len returns the number of elements of list l.
-// The complexity is O(1).
 func (l *List) Len() int {
-	return l.cnt
+	return l.len
 }
 
-// Front returns the first element of list l or nil.
-func (l *List) Front() (ret Intrusive) {
-	if l.cnt != 0 {
-		ret = l.root.next
+// Front returns the first element of list l or nil if the list is empty.
+func (l *List) Front() Intrusive {
+	if l.len == 0 {
+		return nil
 	}
-	return
+	return l.root.next
 }
 
-// Back returns the last element of list l or nil.
-func (l *List) Back() (ret Intrusive) {
-	if l.cnt != 0 {
-		ret = l.root.prev
+// Back returns the last element of list l or nil if the list is empty.
+func (l *List) Back() Intrusive {
+	if l.len == 0 {
+		return nil
 	}
-	return
+	return l.root.prev
 }
 
 // lazyInit lazily initializes a zero List value.
-// Note: for any element where e.List() == l, lazyInit() has been called.
 func (l *List) lazyInit() {
 	if l.root.next == nil {
 		l.Init()
 	}
 }
 
-// insert inserts e after at, increments l.cnt, and returns e.
+// insert inserts e after at, increments l.len, and returns e.
 func (l *List) insert(e, at Intrusive) Intrusive {
-	// at  -> e -> n (old:at.next)
-	n := at.Successor()
-	at.SetElements(l, at.Predecessor(), e)
-	e.SetElements(l, at, n)
-	n.SetElements(l, e, n.Successor())
-	l.cnt++
+	n := at.getNext()
+	at.setNext(e)
+	e.setPrev(at)
+	e.setNext(n)
+	n.setPrev(e)
+	e.setList(l)
+	l.len++
 	return e
 }
 
-// remove removes e from its list, decrements l.cnt, and returns e.
+// remove removes e from its list, decrements l.len, and returns e.
 func (l *List) remove(e Intrusive) Intrusive {
-	// eprev -> enext
-	eprev, enext := e.Predecessor(), e.Successor()
-	eprev.SetElements(l, eprev.Predecessor(), enext)
-	enext.SetElements(l, eprev, enext.Successor())
-	e.SetElements(nil, nil, nil)
-	l.cnt--
+	e.getPrev().setNext(e.getNext())
+	e.getNext().setPrev(e.getPrev())
+	e.setNext(nil)
+	e.setPrev(nil)
+	e.setList(nil)
+	l.len--
 	return e
 }
 
 // Remove removes e from l if e is an element of list l.
-// It returns true if it was removed.
-func (l *List) Remove(e Intrusive) (okay bool) {
-	if e.List() == l {
+// It returns the element value e.Value.
+// The element must not be nil.
+func (l *List) Remove(e Intrusive) bool {
+	if e.getList() == l {
+		// if e.list == l, l must have been initialized when e was inserted
+		// in l or l == nil (e is a zero Element) and l.remove will crash
 		l.remove(e)
-		okay = true
+		return true
 	}
-	return
+
+	return false
 }
 
-// PushFront inserts e at the head of list l and returns e.
+// PushFront inserts a new element e with value v at the front of list l and returns e.
 func (l *List) PushFront(e Intrusive) Intrusive {
 	l.lazyInit()
 	return l.insert(e, &l.root)
 }
 
-// PushBack inserts e at the tail of list l and returns e.
+// PushBack inserts a new element e with value v at the back of list l and returns e.
 func (l *List) PushBack(e Intrusive) Intrusive {
 	l.lazyInit()
 	return l.insert(e, l.root.prev)
 }
 
-// InsertBefore inserts e directly ahead of mark and returns e.
-// If mark is not in this list, no insertion occurs, and this returns nil.
-func (l *List) InsertBefore(v Intrusive, mark Intrusive) (ret Intrusive) {
-	if mark.List() == l {
-		ret = l.insert(v, mark.Predecessor())
+// InsertBefore inserts a new element e with value v immediately before mark and returns e.
+// If mark is not an element of l, the list is not modified.
+// The mark must not be nil.
+func (l *List) InsertBefore(e Intrusive, mark Intrusive) Intrusive {
+	if mark.getList() != l {
+		return nil
 	}
-	return
+	// see comment in List.Remove about initialization of l
+	return l.insert(e, mark.getPrev())
 }
 
-// InsertAfter inserts e directly following mark and returns e.
-// If mark is not in this list, no insertion occurs, and this returns nil.
-func (l *List) InsertAfter(v Intrusive, mark Intrusive) (ret Intrusive) {
-	if mark.List() == l {
-		ret = l.insert(v, mark)
+// InsertAfter inserts a new element e with value v immediately after mark and returns e.
+// If mark is not an element of l, the list is not modified.
+// The mark must not be nil.
+func (l *List) InsertAfter(e Intrusive, mark Intrusive) Intrusive {
+	if mark.getList() != l {
+		return nil
 	}
-	return
+	// see comment in List.Remove about initialization of l
+	return l.insert(e, mark)
 }
 
-// MoveToFront moves element e to the head the list, and returns true.
-// If e is not in this list, the list is not modified, and this returns false.
-func (l *List) MoveToFront(e Intrusive) (okay bool) {
-	wrongList := e.List() != l || l.root.next == e
-	if !wrongList {
-		l.insert(l.remove(e), &l.root)
-		okay = true
+// MoveToFront moves element e to the front of list l.
+// If e is not an element of l, the list is not modified.
+// The element must not be nil.
+func (l *List) MoveToFront(e Intrusive) {
+	if e.getList() != l || l.root.next == e {
+		return
 	}
-	return
+	// see comment in List.Remove about initialization of l
+	l.insert(l.remove(e), &l.root)
 }
 
-// MoveToBack puts e at the tail of the list, and returns true.
-// If e is not in this list, the list is not modified, and this returns false.
-func (l *List) MoveToBack(e Intrusive) (okay bool) {
-	wrongList := e.List() != l || l.root.prev == e
-	if !wrongList {
-		l.insert(l.remove(e), l.root.prev)
-		okay = true
+// MoveToBack moves element e to the back of list l.
+// If e is not an element of l, the list is not modified.
+// The element must not be nil.
+func (l *List) MoveToBack(e Intrusive) {
+	if e.getList() != l || l.root.prev == e {
+		return
 	}
-	return
+	// see comment in List.Remove about initialization of l
+	l.insert(l.remove(e), l.root.prev)
 }
 
-// MoveBefore puts e directly in front of mark, and returns true.
-// If e or mark is not in this list, or e == mark, the list is not modified, and this returns false.
-func (l *List) MoveBefore(e, mark Intrusive) (okay bool) {
-	wrongList := e.List() != l || e == mark || mark.List() != l
-	if !wrongList {
-		l.insert(l.remove(e), mark.Predecessor())
-		okay = true
+// MoveBefore moves element e to its new position before mark.
+// If e or mark is not an element of l, or e == mark, the list is not modified.
+// The element and mark must not be nil.
+func (l *List) MoveBefore(e, mark Intrusive) {
+	if e.getList() != l || e == mark || mark.getList() != l {
+		return
 	}
-	return
+	l.insert(l.remove(e), mark.getPrev())
 }
 
-// MoveAfter puts element e directly behind mark, and returns true.
-// If e or mark is not in this list, or e == mark, the list is not modified, and this returns false.
-func (l *List) MoveAfter(e, mark Intrusive) (okay bool) {
-	wrongList := e.List() != l || e == mark || mark.List() != l
-	if !wrongList {
-		l.insert(l.remove(e), mark)
-		okay = true
+// MoveAfter moves element e to its new position after mark.
+// If e or mark is not an element of l, or e == mark, the list is not modified.
+// The element and mark must not be nil.
+func (l *List) MoveAfter(e, mark Intrusive) {
+	if e.getList() != l || e == mark || mark.getList() != l {
+		return
 	}
-	return
+	l.insert(l.remove(e), mark)
 }
 
 // MoveBackList moves all elements from other to the end of this list.
+// diff with MoveBackList, because that is copy, here is move
 func (l *List) MoveBackList(other *List) {
 	if l != other {
 		l.lazyInit()
 		for e := other.Front(); e != nil; {
-			n := Next(e)
+			n := e.Next()
 			l.insert(e, l.root.prev)
 			e = n
 		}
-		other.Init() // empty the other list
+		other.Init()
 	}
 }
 
 // MoveFrontList moves all elements from other to the front of this list.
+// diff with PushFrontList, because that is copy, here is move
 func (l *List) MoveFrontList(other *List) {
 	if l != other {
 		l.lazyInit()
 		for e := other.Back(); e != nil; {
-			p := Prev(e)
+			p := e.Prev()
 			l.insert(e, &l.root)
 			e = p
 		}
-		other.Init() // empty the other list
+		other.Init()
 	}
 }
