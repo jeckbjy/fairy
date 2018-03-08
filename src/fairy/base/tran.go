@@ -4,25 +4,20 @@ import (
 	"fairy"
 )
 
-type TransportEx interface {
-	fairy.Transport
-	ConnectBy()
-}
-
-type Transport struct {
+type Tran struct {
 	Config
 	filters fairy.FilterChain
 }
 
-func (self *Transport) SetFilterChain(filters fairy.FilterChain) {
+func (self *Tran) SetFilterChain(filters fairy.FilterChain) {
 	self.filters = filters
 }
 
-func (self *Transport) GetFilterChain() fairy.FilterChain {
+func (self *Tran) GetFilterChain() fairy.FilterChain {
 	return self.filters
 }
 
-func (self *Transport) AddFilters(filters ...fairy.Filter) {
+func (self *Tran) AddFilters(filters ...fairy.Filter) {
 	if self.filters == nil {
 		self.filters = NewFilterChain()
 	}
@@ -39,5 +34,5 @@ func (self *Transport) AddFilters(filters ...fairy.Filter) {
 	}
 }
 
-func (self *Transport) Start() {
+func (self *Tran) Start() {
 }
