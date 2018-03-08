@@ -7,7 +7,7 @@ import (
 )
 
 type StreamTran struct {
-	base.Transport
+	base.Tran
 	listeners []net.Listener
 	wg        sync.WaitGroup
 	stopped   bool
