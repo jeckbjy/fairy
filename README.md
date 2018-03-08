@@ -4,8 +4,9 @@
 
 - 支持tcp,websocket,kcp协议
 - 支持telnet协议
-- 支持json，protobuf，binary编码
+- 支持protobuf,json,xml,gob编码
 - 支持rpc调用
+- 支持高效定时器
 - 部分支持future/promise模式(TODO)
 
 ## 一:用例

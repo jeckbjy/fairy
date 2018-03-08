@@ -3,10 +3,13 @@ package fairy
 import (
 	"bytes"
 	"container/list"
+	"fairy/util"
 	"fmt"
 	"io"
 	"math"
 )
+
+const defaultGrowSize = 1024
 
 var errNotFindLine = fmt.Errorf("err not find line!")
 
@@ -393,13 +396,49 @@ func (self *Buffer) Read(buffer []byte) (int, error) {
 	return length, nil
 }
 
+func (self *Buffer) grow(count int) {
+	// check empty
+	if self.datas.Len() == 0 {
+		newCap := util.MaxInt(count+count>>1, defaultGrowSize)
+		data := make([]byte, count, newCap)
+		self.datas.PushBack(data)
+	} else {
+		// expand last first
+		back := self.datas.Back()
+		data := back.Value.([]byte)
+		caps := cap(data)
+		leng := len(data)
+		left := caps - leng
+
+		// back enough
+		if left >= count {
+			back.Value = data[0 : leng+count]
+		} else {
+			// step1: resize left
+			if left > 0 {
+				back.Value = data[0:caps]
+			}
+
+			// step2: alloc new
+			newCount := count - left
+			newCap := util.MaxInt(newCount+newCount>>1, defaultGrowSize)
+			data = make([]byte, newCount, newCap)
+			self.datas.PushBack(data)
+		}
+	}
+
+	// resize
+	self.length += count
+}
+
 func (self *Buffer) Write(bufffer []byte) (int, error) {
 	self.checkCursor()
 
 	length := len(bufffer)
 	count := self.position + length - self.length
 	if count > 0 {
-		return 0, fmt.Errorf("Buffer.write overflow!")
+		self.grow(count)
+		// return 0, fmt.Errorf("Buffer.write overflow!")
 	}
 
 	iter := Iterator{}
