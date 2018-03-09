@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fairy"
 	"fairy/base"
+	"fmt"
 	"net"
 	"sync"
 )
@@ -62,6 +63,9 @@ func (sc *StreamConn) Open(conn interface{}) {
 	sc.channel.Open(conn)
 	// set reader
 	sc.rbuf.Clear()
+	if sc.wbuf != nil {
+		sc.wbuf.Init()
+	}
 
 	sc.HandleOpen(sc)
 	fairy.GetConnMgr().Put(sc)
@@ -90,16 +94,29 @@ func (sc *StreamConn) Close() {
 	}
 
 	go func() {
-		sc.channel.Close()
-		// stop write, wait for finish
+		// log.Debug("begin close conn:%+v", sc.GetConnId())
+		// wait for write finish
+		wbuf := list.List{}
+		sc.wmux.Lock()
 		sc.wstopped = true
-		sc.wcnd.Signal()
+		// check lazy init
+		if sc.wbuf != nil {
+			wbuf = *sc.wbuf
+			sc.wbuf.Init()
+			sc.wcnd.Signal()
+		}
+		sc.wmux.Unlock()
+		sc.flush(&wbuf)
+
+		// stop read
+		sc.channel.Close()
 		sc.wg.Wait()
 		sc.SetState(fairy.ConnStateClosed)
 		//
 		fairy.GetConnMgr().Remove(sc.GetConnId())
 		// reconnect
 		sc.tryReconnect()
+		// log.Debug("finish close conn:%+v", sc.GetConnId())
 	}()
 }
 
@@ -111,7 +128,11 @@ func (sc *StreamConn) Read() *fairy.Buffer {
 	return sc.rbuf
 }
 
-func (sc *StreamConn) Write(buf *fairy.Buffer) {
+func (sc *StreamConn) Write(buf *fairy.Buffer) error {
+	if !sc.IsState(fairy.ConnStateOpen) {
+		return fmt.Errorf("conn closed,cannot write buffer!")
+	}
+
 	sc.wmux.Lock()
 
 	// lazy init writer buffer
@@ -125,9 +146,11 @@ func (sc *StreamConn) Write(buf *fairy.Buffer) {
 	}
 
 	sc.wbuf.PushBack(buf)
-	// sc.wfuture
+
 	sc.wcnd.Signal()
 	sc.wmux.Unlock()
+
+	return nil
 }
 
 func (sc *StreamConn) Send(msg interface{}) {
@@ -160,7 +183,7 @@ func (sc *StreamConn) sendThread() {
 	sc.wg.Add(1)
 
 	sc.wstopped = false
-	for !sc.wstopped {
+	for {
 		bufs := list.List{}
 		// wait buffer
 		sc.wmux.Lock()
@@ -172,31 +195,35 @@ func (sc *StreamConn) sendThread() {
 		sc.wbuf.Init()
 		sc.wmux.Unlock()
 
-		// flush buffer
-		for iterl := bufs.Front(); iterl != nil; iterl = iterl.Next() {
-			if iterl.Value == nil {
-				continue
-			}
+		// close will flush left
+		if sc.wstopped {
+			break
+		}
 
-			buffer := iterl.Value.(*fairy.Buffer)
-			iterb := buffer.Front()
-			for ; iterb != nil; iterb = iterb.Next() {
-				data := iterb.Value.([]byte)
-				err := sc.channel.Write(data)
-				if err != nil {
-					sc.HandleError(sc, err)
-					sc.wstopped = true
-					break
-				}
-			}
+		sc.flush(&bufs)
+	}
 
-			if iterb != nil {
-				break
+	sc.wstopped = true
+	sc.wg.Done()
+	// log.Debug("send thread finish")
+}
+
+func (sc *StreamConn) flush(bufs *list.List) {
+	// flush buffer
+	for iterl := bufs.Front(); iterl != nil; iterl = iterl.Next() {
+		if iterl.Value == nil {
+			continue
+		}
+
+		buffer := iterl.Value.(*fairy.Buffer)
+		for iterb := buffer.Front(); iterb != nil; iterb = iterb.Next() {
+			data := iterb.Value.([]byte)
+			err := sc.channel.Write(data)
+			if err != nil {
+				sc.HandleError(sc, err)
+				sc.wstopped = true
+				return
 			}
 		}
 	}
-
-	sc.wbuf.Init()
-	sc.wg.Done()
-	// log.Debug("send thread finish")
 }

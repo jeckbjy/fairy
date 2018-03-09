@@ -9,10 +9,12 @@ import (
 	"fairy/log"
 	"fairy/tcp"
 	"fairy/timer"
+	"fairy/util"
 )
 
 type ChatMsg struct {
-	Content string
+	Content   string
+	Timestamp int64
 }
 
 func StartServer() {
@@ -23,10 +25,11 @@ func StartServer() {
 	// step2: register handler
 	fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
 		req := pkt.GetMessage().(*ChatMsg)
-		log.Debug("client msg:%+v", req.Content)
+		log.Debug("client msg:%+v", req)
 
 		rsp := &ChatMsg{}
 		rsp.Content = "welcome boy!"
+		rsp.Timestamp = util.Now()
 		conn.Send(rsp)
 	})
 
@@ -50,7 +53,7 @@ func StartClient() {
 	// step2: register handler
 	fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
 		req := pkt.GetMessage().(*ChatMsg)
-		log.Debug("server msg:%+v", req.Content)
+		log.Debug("server msg:%+v", req)
 	})
 
 	var gConn fairy.Conn
@@ -75,8 +78,11 @@ func StartClient() {
 		log.Debug("Ontimeout")
 		req := &ChatMsg{}
 		req.Content = "hello word!"
+		req.Timestamp = util.Now()
 		gConn.Send(req)
-		t.Restart()
+		if gConn.IsActive() {
+			t.Restart()
+		}
 	})
 
 	// step4: listen or connect

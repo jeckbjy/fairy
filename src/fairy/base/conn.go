@@ -85,6 +85,10 @@ func (self *Conn) SetState(state int32) {
 	self.State = state
 }
 
+func (self *Conn) IsActive() bool {
+	return self.IsState(fairy.ConnStateOpen)
+}
+
 func (self *Conn) GetData() interface{} {
 	return self.data
 }

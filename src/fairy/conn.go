@@ -25,6 +25,7 @@ type Conn interface {
 	SetData(data interface{})
 	GetState() int32
 	SetState(state int32)
+	IsActive() bool
 	IsServerSide() bool
 	IsClientSide() bool
 	GetTransport() Transport
@@ -34,6 +35,6 @@ type Conn interface {
 	Wait()
 	Close()
 	Read() *Buffer
-	Write(buffer *Buffer)
+	Write(buffer *Buffer) error
 	Send(obj interface{})
 }
