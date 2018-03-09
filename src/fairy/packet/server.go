@@ -9,7 +9,7 @@ func NewServer() *ServerPacket {
 	return pkt
 }
 
-// 服务器内部通信用Packet
+// ServerPacket 服务器内部编码,编码规则,flag(1byte)+[head....]
 type ServerPacket struct {
 	BasePacket
 	Mode uint

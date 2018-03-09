@@ -15,7 +15,7 @@ type TransferFilter struct {
 
 func (self *TransferFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	// 先获得buffer
-	conn := ctx.GetConnection()
+	conn := ctx.GetConn()
 	buffer := conn.Read()
 	if buffer == nil || buffer.Empty() {
 		return ctx.GetStopAction()
@@ -29,7 +29,7 @@ func (self *TransferFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActi
 func (self *TransferFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
 	// 底层发送
 	if buffer, ok := ctx.GetMessage().(*fairy.Buffer); ok {
-		conn := ctx.GetConnection()
+		conn := ctx.GetConn()
 		conn.Write(buffer)
 	}
 

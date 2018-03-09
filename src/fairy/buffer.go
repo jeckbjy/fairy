@@ -234,7 +234,7 @@ func (self *Buffer) Seek(offset int, whence int) error {
 	}
 
 	if pos < 0 || pos > self.length {
-		return fmt.Errorf("buffer seek overflow!")
+		return fmt.Errorf("buffer seek overflow")
 	}
 
 	// check element
@@ -600,6 +600,16 @@ func (self *Buffer) checkCursor() {
 		self.offset = len(self.element.Value.([]byte))
 	} else {
 		self.Seek(self.position, io.SeekStart)
+	}
+}
+
+// 遍历整个数组
+func (self *Buffer) Visit(cb func([]byte) bool) {
+	for iter := self.datas.Front(); iter != nil; iter = iter.Next() {
+		data := iter.Value.([]byte)
+		if !cb(data) {
+			break
+		}
 	}
 }
 

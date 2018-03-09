@@ -40,7 +40,6 @@ func ConvBool(v interface{}) (bool, error) {
 			return false, err
 		}
 	}
-	return true, nil
 }
 
 func ConvInt(v interface{}) (int, error) {

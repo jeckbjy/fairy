@@ -60,7 +60,7 @@ type TelnetFilter struct {
 
 func (self *TelnetFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction {
 	if self.Prompt != "" {
-		conn := ctx.GetConnection()
+		conn := ctx.GetConn()
 		buffer := fairy.NewBuffer()
 		buffer.Append([]byte(self.Prompt))
 		conn.Write(buffer)
@@ -78,7 +78,7 @@ func (self *TelnetFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction
 			ctx.SetMessage(str)
 			// 默认行为
 			if self.cb != nil {
-				self.cb(ctx.GetConnection(), str)
+				self.cb(ctx.GetConn(), str)
 			}
 		}
 	}

@@ -20,7 +20,7 @@ type FilterContext struct {
 	err         error
 }
 
-func (self *FilterContext) GetConnection() fairy.Conn {
+func (self *FilterContext) GetConn() fairy.Conn {
 	return self.conn
 }
 
@@ -44,9 +44,10 @@ func (self *FilterContext) SetError(err error) {
 	self.err = err
 }
 
-func (self *FilterContext) ThrowError(err error) {
+func (self *FilterContext) ThrowError(err error) fairy.FilterAction {
 	self.err = err
 	self.filterChain.HandleError(self.conn, err)
+	return self.GetStopAction()
 }
 
 func (self *FilterContext) SetHandler(handler fairy.Handler) {

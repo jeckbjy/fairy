@@ -2,11 +2,11 @@ package fairy
 
 var (
 	// CfgReconnectOpen 设置是否开启自动重连
-	CfgReconnectOpen = NewAttrKey(AttrCatConfigSystem, "ReconnectOpen")
+	CfgReconnectOpen = NewAttrKey(AttrKindConfig, "ReconnectOpen")
 	// CfgReconnectInterval 设置重连间隔,秒为单位,默认1s
-	CfgReconnectInterval = NewAttrKey(AttrCatConfigSystem, "ReconnectInterval")
+	CfgReconnectInterval = NewAttrKey(AttrKindConfig, "ReconnectInterval")
 	// CfgReaderBufferSize 设置读缓冲, 默认1024
-	CfgReaderBufferSize = NewAttrKey(AttrCatConfigSystem, "ReaderBufferSize")
+	CfgReaderBufferSize = NewAttrKey(AttrKindConfig, "ReaderBufferSize")
 )
 
 type Transport interface {

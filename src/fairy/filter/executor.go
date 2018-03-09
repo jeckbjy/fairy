@@ -28,7 +28,7 @@ type ExecutorFilter struct {
 
 func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	msg := ctx.GetMessage()
-	conn := ctx.GetConnection()
+	conn := ctx.GetConn()
 	pkt, ok := msg.(fairy.Packet)
 	if !ok {
 		return ctx.GetNextAction()

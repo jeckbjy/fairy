@@ -58,7 +58,7 @@ func (lf *LoggingFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction
 }
 
 func (lf *LoggingFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction {
-	conn := ctx.GetConnection()
+	conn := ctx.GetConn()
 
 	if lf.need(LoggingFilterAccept) && conn.IsServerSide() {
 		log.Debug("accept new conn:id=%+v, addr=%+v", conn.GetConnId(), conn.RemoteAddr())
@@ -73,7 +73,7 @@ func (lf *LoggingFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction 
 
 func (lf *LoggingFilter) HandleClose(ctx fairy.FilterContext) fairy.FilterAction {
 	if lf.need(LoggingFilterClose) {
-		conn := ctx.GetConnection()
+		conn := ctx.GetConn()
 		log.Debug("close conn:id=%+v, isclient=%+v", conn.GetConnId(), conn.IsClientSide())
 	}
 
@@ -82,7 +82,7 @@ func (lf *LoggingFilter) HandleClose(ctx fairy.FilterContext) fairy.FilterAction
 
 func (lf *LoggingFilter) HandleError(ctx fairy.FilterContext) fairy.FilterAction {
 	if lf.need(LoggingFilterClose) {
-		conn := ctx.GetConnection()
+		conn := ctx.GetConn()
 		log.Error("conn error:id=%+v err=%+v", conn.GetConnId(), ctx.GetError())
 	}
 
