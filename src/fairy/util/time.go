@@ -10,6 +10,10 @@ func Now() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
+func NowUnix() int64 {
+	return time.Now().Unix()
+}
+
 func FromSec(t int64) int64 {
 	return t * 1000
 }

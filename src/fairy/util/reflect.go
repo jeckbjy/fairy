@@ -32,6 +32,8 @@ func ConvBool(v interface{}) (bool, error) {
 		return v.(bool), nil
 	case string:
 		return strconv.ParseBool(v.(string))
+	case []byte:
+		return strconv.ParseBool(string(v.([]byte)))
 	default:
 		val, err := ConvInt64(v)
 		if err == nil {
@@ -66,6 +68,8 @@ func ConvInt64(v interface{}) (int64, error) {
 		return int64(v.(int)), nil
 	case string:
 		return strconv.ParseInt(v.(string), 10, 0)
+	case []byte:
+		return strconv.ParseInt(string(v.([]byte)), 10, 0)
 	case int8:
 		return int64(v.(int8)), nil
 	case int16:
@@ -97,6 +101,8 @@ func ConvUint64(v interface{}) (uint64, error) {
 	switch v.(type) {
 	case string:
 		return strconv.ParseUint(v.(string), 10, 0)
+	case []byte:
+		return strconv.ParseUint(string(v.([]byte)), 10, 0)
 	case int:
 		return uint64(v.(int)), nil
 	case int8:
@@ -139,6 +145,8 @@ func ConvFloat64(v interface{}) (float64, error) {
 	switch v.(type) {
 	case string:
 		return strconv.ParseFloat(v.(string), 64)
+	case []byte:
+		return strconv.ParseFloat(string(v.([]byte)), 64)
 	case int:
 		return float64(v.(int)), nil
 	case int8:

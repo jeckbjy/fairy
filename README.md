@@ -114,7 +114,7 @@ tran.AddFilters(
     - InBound: HandleRead,HandleOpen,HandleError
     - OutBound:HandleWrite,HandleClose
   - 内置的filters
-    - FrameFilter,PacketFilter,ExecutorFilter,LoggingFilter,TelnetFilter,ConnectFilter
+    - FrameFilter,PacketFilter,ExecutorFilter,LoggingFilter,TelnetFilter,ConnectFilter,RC4Filter
     - 自定义filter
       - filter应该是一个无状态的类
       - 如果需要数据，可以有两种方式：临时Filter之间传递数据，可以存储在FilterContext中,长期持有的,可以存储在Connection中
