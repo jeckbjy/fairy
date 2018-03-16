@@ -14,8 +14,10 @@
 //
 // 修改了部分接口，以便和标准的一致
 // 只有MoveFrontList和MoveBackList和标准不一样，因为标准是拷贝，这里是移动合并
+// 增加PopFront和PopBack接口
 package inlist
 
+// Element impl Intrusive
 type Element struct {
 	Hook
 	Value interface{}
@@ -26,6 +28,7 @@ func NewElement(v interface{}) Intrusive {
 	return &Element{Value: v}
 }
 
+// Value return value of element
 func Value(i Intrusive) interface{} {
 	return i.(*Element).Value
 }
@@ -40,6 +43,7 @@ func Prev(e Intrusive) (ret Intrusive) {
 	return e.Prev()
 }
 
+// Intrusive interface of Element
 type Intrusive interface {
 	Prev() Intrusive
 	Next() Intrusive
@@ -192,6 +196,20 @@ func (l *List) PushFront(e Intrusive) Intrusive {
 func (l *List) PushBack(e Intrusive) Intrusive {
 	l.lazyInit()
 	return l.insert(e, l.root.prev)
+}
+
+// PopFront remove and return front element
+func (l *List) PopFront() Intrusive {
+	e := l.Front()
+	l.remove(e)
+	return e
+}
+
+// PopBack remove and return back element
+func (l *List) PopBack() Intrusive {
+	e := l.Back()
+	l.remove(e)
+	return e
 }
 
 // InsertBefore inserts a new element e with value v immediately before mark and returns e.

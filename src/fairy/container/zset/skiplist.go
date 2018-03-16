@@ -21,6 +21,9 @@ type zNode struct {
 	level []*zLevel
 }
 
+// 一些资料
+// http://ju.outofmemory.cn/entry/81525
+// http://zhangtielei.com/posts/blog-redis-skiplist.html
 type zSkipList struct {
 	head  *zNode
 	tail  *zNode
