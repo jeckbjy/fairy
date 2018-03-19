@@ -69,7 +69,9 @@ func (sc *StreamConn) Open(conn interface{}) {
 
 	sc.HandleOpen(sc)
 	fairy.GetConnMgr().Put(sc)
-	go sc.recvThread()
+	if sc.GetConfig(fairy.CfgAutoRead).(bool) {
+		go sc.recvThread()
+	}
 }
 
 func (sc *StreamConn) tryReconnect() {

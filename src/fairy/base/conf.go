@@ -7,12 +7,15 @@ import (
 
 type Config struct {
 	AttrMap
+	CfgAutoRead          bool // 自动开启读协程
 	CfgReconnectOpen     bool // 尝试重连次数，-1一直重连,0表示不需要断线重连
 	CfgReconnectInterval int  // 单位秒
 	CfgReaderBufferSize  int  // 读缓冲器大小
 }
 
+// SetDefaultConfig 设置默认配置
 func (self *Config) SetDefaultConfig() {
+	self.CfgAutoRead = true
 	self.CfgReconnectOpen = true
 	self.CfgReconnectInterval = 10
 	self.CfgReaderBufferSize = 1024
@@ -20,6 +23,12 @@ func (self *Config) SetDefaultConfig() {
 
 func (self *Config) SetConfig(key *fairy.AttrKey, val interface{}) {
 	switch key {
+	case fairy.CfgAutoRead:
+		{
+			if ret, err := util.ConvBool(val); err == nil {
+				self.CfgAutoRead = ret
+			}
+		}
 	case fairy.CfgReconnectOpen:
 		if ret, err := util.ConvBool(val); err == nil {
 			self.CfgReconnectOpen = ret
@@ -39,6 +48,8 @@ func (self *Config) SetConfig(key *fairy.AttrKey, val interface{}) {
 
 func (self *Config) GetConfig(key *fairy.AttrKey) interface{} {
 	switch key {
+	case fairy.CfgAutoRead:
+		return self.CfgAutoRead
 	case fairy.CfgReconnectOpen:
 		return self.CfgReconnectOpen
 	case fairy.CfgReconnectInterval:

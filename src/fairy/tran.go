@@ -7,8 +7,11 @@ var (
 	CfgReconnectInterval = NewAttrKey(AttrKindConfig, "ReconnectInterval")
 	// CfgReaderBufferSize 设置读缓冲, 默认1024
 	CfgReaderBufferSize = NewAttrKey(AttrKindConfig, "ReaderBufferSize")
+	// CfgAutoRead 自动开启读协程,false,socket将不会读数据
+	CfgAutoRead = NewAttrKey(AttrKindConfig, "AutoRead")
 )
 
+// Transport 负责Conn的创建
 type Transport interface {
 	SetConfig(key *AttrKey, val interface{})
 	GetConfig(key *AttrKey) interface{}
