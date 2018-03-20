@@ -5,7 +5,8 @@
 - 支持tcp,websocket,kcp协议
 - 支持telnet协议
 - 支持protobuf,json,xml,gob编码
-- 支持rpc调用
+- 支持简单rpc调用
+- 支持简单的soa服务发现
 - 支持灵活的线程模型以及默认的消息回调处理
 - 支持高效定时器
 - 部分支持future/promise模式(TODO)

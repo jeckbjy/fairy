@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func NewConn(channel IChannel, tran fairy.Transport, side bool, kind int) *StreamConn {
+func NewConn(channel IChannel, tran fairy.Transport, side bool, kind interface{}) *StreamConn {
 	stream_conn := &StreamConn{}
 	stream_conn.Create(channel, tran, side, kind)
 	return stream_conn
@@ -35,8 +35,8 @@ type StreamConn struct {
 	wstopped bool
 }
 
-func (sc *StreamConn) Create(channel IChannel, tran fairy.Transport, side bool, kind int) {
-	sc.Conn.Create(tran, side, kind)
+func (sc *StreamConn) Create(channel IChannel, tran fairy.Transport, side bool, tag interface{}) {
+	sc.Conn.Create(tran, side, tag)
 	sc.channel = channel
 	sc.rbuf = fairy.NewBuffer()
 	sc.wmux = &sync.Mutex{}

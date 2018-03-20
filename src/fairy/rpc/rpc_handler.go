@@ -5,27 +5,29 @@ import (
 	"fairy/log"
 )
 
-func newHandler(cb fairy.HandlerCB, pro fairy.Promise) *RpcHandler {
-	rh := &RpcHandler{cb: cb, promise: pro}
+func newHandler(cb fairy.HandlerCB, pro fairy.Promise) *rpcHandler {
+	rh := &rpcHandler{cb: cb, promise: pro}
 	return rh
 }
 
-type RpcHandler struct {
+type rpcHandler struct {
 	cb      fairy.HandlerCB
 	promise fairy.Promise
 }
 
-func (rh *RpcHandler) GetQueueId() int {
+func (rh *rpcHandler) GetQueueId() int {
 	return 0
 }
 
-func (rh *RpcHandler) Invoke(conn fairy.Conn, packet fairy.Packet) {
+func (rh *rpcHandler) Invoke(conn fairy.Conn, packet fairy.Packet) {
 	defer log.Catch()
 	rh.cb(conn, packet)
 
-	if packet.IsSuccess() {
-		rh.promise.SetSuccess()
-	} else {
-		rh.promise.SetFailure()
+	if rh.promise != nil {
+		if packet.IsSuccess() {
+			rh.promise.SetSuccess()
+		} else {
+			rh.promise.SetFailure()
+		}
 	}
 }

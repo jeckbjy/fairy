@@ -21,13 +21,14 @@ type Conn struct {
 	State  int32
 	side   int
 	data   interface{}
+	tag    interface{}
 	host   string
 }
 
-func (self *Conn) Create(tran fairy.Transport, side bool, kind int) {
+func (self *Conn) Create(tran fairy.Transport, side bool, tag interface{}) {
 	self.tran = tran
 	self.FilterChain = tran.GetFilterChain()
-	self.kind = kind
+	self.tag = tag
 	if side {
 		self.side = SIDE_SERVER
 	} else {
@@ -87,6 +88,14 @@ func (self *Conn) SetState(state int32) {
 
 func (self *Conn) IsActive() bool {
 	return self.IsState(fairy.ConnStateOpen)
+}
+
+func (self *Conn) GetTag() interface{} {
+	return self.tag
+}
+
+func (self *Conn) SetTag(tag interface{}) {
+	self.tag = tag
 }
 
 func (self *Conn) GetData() interface{} {

@@ -6,26 +6,26 @@ import (
 	"sync"
 )
 
-var gRpcMgr *RpcMgr
+var gRPCMgr *rpcMgr
 
 func init() {
-	util.Once(gRpcMgr, func() {
-		gRpcMgr = &RpcMgr{}
+	util.Once(gRPCMgr, func() {
+		gRPCMgr = &rpcMgr{}
 	})
 }
 
-type RpcMgr struct {
+type rpcMgr struct {
 	handlers map[uint64]fairy.Handler
 	mux      sync.Mutex
 }
 
-func (rm *RpcMgr) Push(rpcid uint64, rh *RpcHandler) {
+func (rm *rpcMgr) Push(rpcid uint64, rh fairy.Handler) {
 	rm.mux.Lock()
 	rm.handlers[rpcid] = rh
 	rm.mux.Unlock()
 }
 
-func (rm *RpcMgr) Pop(rpcid uint64) fairy.Handler {
+func (rm *rpcMgr) Pop(rpcid uint64) fairy.Handler {
 	var handler fairy.Handler
 	rm.mux.Lock()
 	if h, ok := rm.handlers[rpcid]; ok {

@@ -1,9 +1,9 @@
 package main
 
-import "fairy-ztest/chat"
+import "fairy-ztest/echo"
 
 func main() {
 	// test.TestZSet()
-	// echo.Test()
-	chat.Test()
+	echo.Test()
+	// chat.Test()
 }

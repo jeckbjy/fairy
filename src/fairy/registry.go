@@ -142,7 +142,8 @@ func (self *Registry) GetInfo(msg interface{}) (uint, string) {
 		return info.Id, info.Name
 	}
 
-	return 0, ""
+	// 默认使用类名
+	return 0, msgType.Name()
 }
 
 func (self *Registry) GetName(msg interface{}) string {

@@ -8,6 +8,10 @@ type Event interface {
 	Process()
 }
 
+//////////////////////////////////////////////////
+// FuncEvent
+//////////////////////////////////////////////////
+
 type Callback func()
 
 func NewFuncEvent(cb Callback) *FuncEvent {
@@ -22,6 +26,10 @@ type FuncEvent struct {
 func (self *FuncEvent) Process() {
 	self.cb()
 }
+
+//////////////////////////////////////////////////
+// PacketEvent
+//////////////////////////////////////////////////
 
 func NewPacketEvent(conn fairy.Conn, packet fairy.Packet, handler fairy.Handler) *PacketEvent {
 	ev := &PacketEvent{conn: conn, packet: packet, handler: handler}

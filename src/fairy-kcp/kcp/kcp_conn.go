@@ -6,8 +6,8 @@ import (
 	"net"
 )
 
-func NewConn(tran fairy.Transport, side bool, kind int) *snet.StreamConn {
-	conn := snet.NewConn(&KcpConn{}, tran, side, kind)
+func NewConn(tran fairy.Transport, side bool, tag interface{}) *snet.StreamConn {
+	conn := snet.NewConn(&KcpConn{}, tran, side, tag)
 	return conn
 }
 

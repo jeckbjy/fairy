@@ -18,8 +18,8 @@ type Transport interface {
 	GetFilterChain() FilterChain
 	SetFilterChain(chain FilterChain)
 	AddFilters(filters ...Filter)
-	Listen(host string, kind int) error
-	Connect(host string, kind int) (Future, error)
+	Listen(host string, tag interface{}) error
+	Connect(host string, tag interface{}) (Future, error)
 	Reconnect(conn Conn) (Future, error) // 断线重连使用
 	Start()
 	Stop()

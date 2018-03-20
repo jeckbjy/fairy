@@ -10,7 +10,7 @@ const (
 	ConnStateClosing    = 3
 )
 
-// Connection has properties Type ConnId,Uid,OpenId,Data,State,Side and so on
+// Conn has some properties such as Type ConnId,Uid,OpenId,Data,State,Side
 type Conn interface {
 	AttrMap
 	GetType() int
@@ -21,6 +21,8 @@ type Conn interface {
 	SetUid(uid uint64)
 	GetOpenId() string
 	SetOpenId(openid string)
+	GetTag() interface{}
+	SetTag(tag interface{})
 	GetData() interface{}
 	SetData(data interface{})
 	GetState() int32

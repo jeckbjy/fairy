@@ -92,6 +92,7 @@ func (self *PacketFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterActio
 	var msg interface{}
 	var ok bool
 
+	// 校验是packet,还是原始message
 	pkt, ok = data.(fairy.Packet)
 	if ok {
 		msg = pkt.GetMessage()

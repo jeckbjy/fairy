@@ -20,7 +20,7 @@ type TcpTran struct {
 	snet.StreamTran
 }
 
-func (t *TcpTran) Listen(host string, kind int) error {
+func (t *TcpTran) Listen(host string, tag interface{}) error {
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		log.Error("%+v", err)
@@ -30,19 +30,19 @@ func (t *TcpTran) Listen(host string, kind int) error {
 	t.AddListener(listener)
 
 	t.AddGroup()
-	go func(listener net.Listener, kind int) {
+	go func(listener net.Listener, tag interface{}) {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
 				break
 			}
 
-			new_conn := newConn(t, true, kind)
+			new_conn := newConn(t, true, tag)
 			new_conn.Open(conn)
 		}
 
 		t.Done()
-	}(listener, kind)
+	}(listener, tag)
 
 	return nil
 }
@@ -70,8 +70,8 @@ func (t *TcpTran) ConnectBy(promise fairy.Promise, new_conn fairy.Conn) (fairy.F
 	return promise, nil
 }
 
-func (t *TcpTran) Connect(host string, kind int) (fairy.Future, error) {
-	new_conn := newConn(t, false, kind)
+func (t *TcpTran) Connect(host string, tag interface{}) (fairy.Future, error) {
+	new_conn := newConn(t, false, tag)
 	new_conn.SetHost(host)
 	promise := base.NewPromise(new_conn)
 	return t.ConnectBy(promise, new_conn)
