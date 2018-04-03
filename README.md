@@ -105,15 +105,16 @@ tran.AddFilters(
 ## 三:原理
 
 - Transport和Connection
-  - Transport:主要提供Listen和Connect两个接口,用于创建Connection,Connection默认会自动断线重连，如果不需要断线重连,需要设置Transport配置,tran.SetConfig(fairy.CfgReconnectCount, 0)
-  - Connection:类似于net.Conn，主要提供Read，Write，Close等接口，区别是读写是异步完成的
+  - Transport:主要提供Listen和Connect两个接口,用于创建Connection,Connection默认会自动断线重连，如果不需要断线重连,需要设置Transport配置,tran.SetConfig(fairy.CfgReconnectOpen, false)
+  - Connection:类似于net.Conn，主要提供异步Read，Write，Close等接口
 
  ![Tran和Conn](doc/tran-conn.png)
 
 - FilterChain和Filters
-  - filter分为InBound和OutBound两种流向,类似grizzly
+  - Filter 类似grizzly,提供InBound和OutBound两种流向
     - InBound: HandleRead,HandleOpen,HandleError
     - OutBound:HandleWrite,HandleClose
+  - FilterContext 用于Filter之间数据传递,最常用的函数:GetMessage和SetMessage用于消息编解码,透传消息，FilterContext继承了AttrMap接口,便于扩展Filter时自定义数据
   - 内置的filters
     - FrameFilter,PacketFilter,ExecutorFilter,LoggingFilter,TelnetFilter,ConnectFilter,RC4Filter
     - 自定义filter
@@ -128,10 +129,10 @@ tran.AddFilters(
     - Frame:用于消息的粘包处理，例如类似http协议，以\r\n分隔，或者以固定长度的头标识后边消息长度
     - Packet:消息包内容，通常分为两个部分，消息头和消息体,分别用Identity和Codec表示
       - Identity:用于消息头的编解码并创建具体的Packet
-        1. 两个字节标识消息ID
-        2. 冒号分隔字符串标识消息名
-        3. 服务器内部通信，还需要uid，reqid等
-        4. 自定义消息头，需要实现两个部分,实现Packet接口和Identity接口
+        - IntegerIdentity:两个字节标识消息ID
+        - StringIdentity:冒号分隔字符串标识消息名
+        - ServerIdentity:服务器内部通信，还需要uid，reqid等
+        - 自定义消息头:需要实现两个部分,实现Packet接口和Identity接口
       - Codec:   用于消息体的编解码,例如json,protobuf
 
 - 线程模型
@@ -145,9 +146,6 @@ tran.AddFilters(
   - 其他线程：Timer线程，Executor线程,Log线程等,
     - log线程需要注意的是属性的初始化是非线程安全的，需要在主线程中设置属性，启动后将不能再修改
     - timer线程默认会将处理函数放到逻辑线程(Executor)中调用,如果不需要放到逻辑线程，可以将TimerEngine中的exector设置为nil
-  - 非线程安全，启动时需要注册好的类
-    - registry
-    - dispatcher
 
 - 其他辅助类
   - buffer:底层的数据流存储，使用list存储[]byte，数据非连续的，可以像stream一样操作数据,使用时需要注意当前位置，以及哪些函数会影响当前位置
@@ -160,6 +158,7 @@ tran.AddFilters(
   - 导表工具:  https://github.com/jeckbjy/tool-table-gen
 
 - 依赖库
+  - 项目vendor使用glide管理,在含有glide.yaml的目录下，运行glide i 即可安装依赖
   - fairy:不依赖任何库,但集成了一些开源库
     - inlist: https://github.com/ionous/container
     - shortid: https://github.com/teris-io/shortid
