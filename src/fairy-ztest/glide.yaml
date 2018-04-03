@@ -1,0 +1,10 @@
+package: .
+ignore:
+- fairy
+- fairy-kcp/kcp
+- fairy-websocket/ws
+- fairy-protobuf/pbcodec
+- fairy-ztest/echo
+import:
+- package: github.com/golang/protobuf
+  version: ~1.0.0
