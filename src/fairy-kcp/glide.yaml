@@ -1,4 +1,0 @@
-package: .
-import:
-- package: github.com/xtaci/kcp-go
-  version: ^3.24.0
