@@ -7,7 +7,7 @@ import (
 	"github.com/jeckbjy/fairy/snet"
 )
 
-func newConn(tran fairy.Transport, side bool, tag interface{}) *snet.StreamConn {
+func newConn(tran fairy.Tran, side bool, tag interface{}) *snet.StreamConn {
 	conn := snet.NewConn(&zTcpConn{}, tran, side, tag)
 	return conn
 }

@@ -14,7 +14,7 @@ const (
 type Conn struct {
 	AttrMap
 	fairy.FilterChain
-	tran   fairy.Transport
+	tran   fairy.Tran
 	connId uint
 	openId string
 	uid    uint64
@@ -26,7 +26,7 @@ type Conn struct {
 	host   string
 }
 
-func (self *Conn) Create(tran fairy.Transport, side bool, tag interface{}) {
+func (self *Conn) Create(tran fairy.Tran, side bool, tag interface{}) {
 	self.tran = tran
 	self.FilterChain = tran.GetFilterChain()
 	self.tag = tag
@@ -123,7 +123,7 @@ func (self *Conn) IsClientSide() bool {
 	return self.side == SIDE_CLIENT
 }
 
-func (self *Conn) GetTransport() fairy.Transport {
+func (self *Conn) GetTransport() fairy.Tran {
 	return self.tran
 }
 

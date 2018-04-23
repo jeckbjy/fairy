@@ -11,7 +11,7 @@ import (
 )
 
 //
-func NewConn(channel IChannel, tran fairy.Transport, side bool, kind interface{}) *StreamConn {
+func NewConn(channel IChannel, tran fairy.Tran, side bool, kind interface{}) *StreamConn {
 	conn := &StreamConn{}
 	conn.Create(channel, tran, side, kind)
 	return conn
@@ -39,7 +39,7 @@ type StreamConn struct {
 	wstopped bool
 }
 
-func (sc *StreamConn) Create(channel IChannel, tran fairy.Transport, side bool, tag interface{}) {
+func (sc *StreamConn) Create(channel IChannel, tran fairy.Tran, side bool, tag interface{}) {
 	sc.Conn.Create(tran, side, tag)
 	sc.channel = channel
 	sc.rbuf = fairy.NewBuffer()

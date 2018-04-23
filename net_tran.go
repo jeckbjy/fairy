@@ -11,8 +11,8 @@ var (
 	CfgAutoRead = NewAttrKey(AttrKindConf, "AutoRead")
 )
 
-// Transport 负责Conn的创建
-type Transport interface {
+// Tran 负责Conn的创建
+type Tran interface {
 	SetConfig(key *AttrKey, val interface{})
 	GetConfig(key *AttrKey) interface{}
 	GetFilterChain() FilterChain

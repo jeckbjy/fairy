@@ -11,7 +11,7 @@ import (
 	"github.com/jeckbjy/fairy/timer"
 )
 
-func NewTransport() fairy.Transport {
+func NewTransport() fairy.Tran {
 	tran := &zTcpTran{}
 	tran.Create()
 	return tran

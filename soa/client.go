@@ -40,12 +40,12 @@ func NewClient() *Client {
  */
 type Client struct {
 	id         uint64                 // 唯一ID
-	centerTran fairy.Transport        // 注册中心Tran
+	centerTran fairy.Tran             // 注册中心Tran
 	centerConn fairy.Conn             // 注册中心Conn
 	info       *InfoEx                // 需要注册的信息
 	subInfos   zInfoMap               // 订阅的服务Map
 	subGroups  map[string]*zInfoGroup // 订阅的服务分组
-	subTran    fairy.Transport        // 用于自动连接订阅的服务器
+	subTran    fairy.Tran             // 用于自动连接订阅的服务器
 }
 
 // PubAddr 注册Addr
@@ -91,7 +91,7 @@ func (cli *Client) SubServices(services []string) {
 }
 
 // SubTran 设置Transport
-func (cli *Client) SubTran(tran fairy.Transport) {
+func (cli *Client) SubTran(tran fairy.Tran) {
 	tran.AddFilters(filter.NewConnect(cli.onConnectSub))
 	cli.subTran = tran
 }

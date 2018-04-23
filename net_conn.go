@@ -30,7 +30,7 @@ type Conn interface {
 	IsActive() bool
 	IsServerSide() bool
 	IsClientSide() bool
-	GetTransport() Transport
+	GetTransport() Tran
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	// operations

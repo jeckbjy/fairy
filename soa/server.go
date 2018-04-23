@@ -46,7 +46,7 @@ func NewServer() *Server {
  * client作为Provider时,目前仅可以有一个端口给其他Customer连接
  */
 type Server struct {
-	tran   fairy.Transport
+	tran   fairy.Tran
 	infos  map[uint64]*srvInfo
 	keyMap map[string]uint
 	keyID  uint
