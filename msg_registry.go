@@ -25,11 +25,6 @@ func NewRegistry() *Registry {
 	return registry
 }
 
-// 注册消息
-func RegisterMessage(msg interface{}, args ...interface{}) {
-	GetRegistry().Register(msg, args...)
-}
-
 // 消息元信息
 type MsgInfo struct {
 	Id   uint
@@ -52,6 +47,7 @@ type Registry struct {
 	typeMap TypeMap
 }
 
+// Register 注册消息，args可以为空，或者为消息名字，或者消息ID
 func (self *Registry) Register(msg interface{}, args ...interface{}) error {
 	if len(args) == 0 {
 		return self.RegisterByName(msg, "")

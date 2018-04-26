@@ -123,7 +123,7 @@ func (cli *Client) Start(host string) error {
 	register(&soaRemoveMsg{}, cli.onRemoveMsg)
 
 	// create transport
-	tran := tcp.NewTransport()
+	tran := tcp.NewTran()
 	tran.AddFilters(
 		filter.NewFrame(frame.NewVarintLength()),
 		filter.NewPacket(identity.NewInteger(), codec.NewGob()),

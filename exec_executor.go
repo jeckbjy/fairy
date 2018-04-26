@@ -62,6 +62,10 @@ func (self *Executor) Dispatch(ev Event) {
 	self.DispatchEx(ev, EVENT_QUEUE_MAIN)
 }
 
+func (self *Executor) DispatchCB(cb Callback) {
+	self.DispatchEx(NewFuncEvent(cb), EVENT_QUEUE_MAIN)
+}
+
 func (self *Executor) DispatchEx(ev Event, queueId int) {
 	queue := self.GetQueue(queueId)
 	queue.Push(ev)

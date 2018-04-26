@@ -11,7 +11,7 @@ import (
 	"github.com/jeckbjy/fairy/timer"
 )
 
-func NewTransport() fairy.Tran {
+func NewTran() fairy.Tran {
 	tran := &zTcpTran{}
 	tran.Create()
 	return tran
@@ -90,7 +90,7 @@ func (t *zTcpTran) Reconnect(conn fairy.Conn) (fairy.Future, error) {
 	if interval == 0 {
 		t.ConnectBy(promise, conn)
 	} else {
-		timer.Start(int64(interval*1000), func(*timer.Timer) {
+		timer.Start(timer.ModeDelay, int64(interval*1000), func() {
 			t.ConnectBy(promise, conn)
 		})
 

@@ -7,7 +7,6 @@ import (
 	"github.com/jeckbjy/fairy/util"
 )
 
-var gErrorHandler Handler
 var gDispatcher *Dispatcher
 
 func GetDispatcher() *Dispatcher {
@@ -18,66 +17,13 @@ func GetDispatcher() *Dispatcher {
 	return gDispatcher
 }
 
-func error_cb(conn Conn, pkt Packet) {
-	// log.Error("cannot find handler:name=%+v,id=%+v,rpcid=%+v",
-	// 	pkt.GetName(),
-	// 	pkt.GetId(),
-	// 	pkt.GetRpcId())
-}
-
 func NewDispatcher() *Dispatcher {
-	if gErrorHandler == nil {
-		gErrorHandler = &HandlerHolder{cb: error_cb}
-	}
-
 	dispatcher := &Dispatcher{}
 	dispatcher.nameMap = make(HandlerNameMap)
 	dispatcher.idMap = make(HandlerIdMap)
-	dispatcher.errhandler = gErrorHandler
 	return dispatcher
 }
 
-//////////////////////////////////////////////////////////
-// 注册回调函数
-//////////////////////////////////////////////////////////
-func RegisterHandler(key interface{}, cb HandlerCB) {
-	RegisterHandlerEx(key, cb, 0)
-}
-
-func RegisterHandlerEx(key interface{}, cb HandlerCB, queueId int) {
-	GetDispatcher().Regsiter(key, &HandlerHolder{cb: cb, queueId: queueId})
-}
-
-func RegisterUncaughtHandler(cb HandlerCB) {
-	GetDispatcher().SetUncaughtHandler(&HandlerHolder{cb: cb, queueId: 0})
-}
-
-//////////////////////////////////////////////////////////
-// Handler
-//////////////////////////////////////////////////////////
-type Handler interface {
-	GetQueueId() int // 暗示在哪个线程执行
-	Invoke(conn Conn, packet Packet)
-}
-
-type HandlerCB func(Conn, Packet)
-type HandlerHolder struct {
-	cb      HandlerCB
-	queueId int
-}
-
-func (self *HandlerHolder) GetQueueId() int {
-	return self.queueId
-}
-
-func (self *HandlerHolder) Invoke(conn Conn, packet Packet) {
-	// defer log.Catch()
-	self.cb(conn, packet)
-}
-
-//////////////////////////////////////////////////////////
-// Dispatcher
-//////////////////////////////////////////////////////////
 type HandlerNameMap map[string]Handler
 type HandlerIdMap map[uint]Handler
 
@@ -86,12 +32,12 @@ const (
 	INVOKER_ID_LIMIT = 2048  // 这个值以下使用数组存储
 )
 
+// Dispatcher 保存Handler的映射关系
 type Dispatcher struct {
-	nameMap    HandlerNameMap
-	idMap      HandlerIdMap
-	idArray    []Handler
-	uncaught   Handler
-	errhandler Handler
+	nameMap  HandlerNameMap
+	idMap    HandlerIdMap
+	idArray  []Handler
+	uncaught Handler
 }
 
 /**
@@ -168,7 +114,7 @@ func (self *Dispatcher) GetFinalHandler(id uint, name string) (Handler, bool) {
 		return self.uncaught, false
 	}
 
-	return self.errhandler, false
+	return nil, false
 }
 
 func (self *Dispatcher) GetHandlerById(id uint) Handler {
@@ -195,12 +141,4 @@ func (self *Dispatcher) SetUncaughtHandler(handler Handler) {
 
 func (self *Dispatcher) GetUncaughtHandler() Handler {
 	return self.uncaught
-}
-
-func (self *Dispatcher) GetErrorHandler() Handler {
-	return self.errhandler
-}
-
-func (self *Dispatcher) SetErrorHandler(h Handler) {
-	self.errhandler = h
 }

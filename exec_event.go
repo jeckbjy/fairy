@@ -39,5 +39,6 @@ type PacketEvent struct {
 }
 
 func (self *PacketEvent) Process() {
-	self.handler.Invoke(self.conn, self.packet)
+	ctx := HandlerCtx{Conn: self.conn, Packet: self.packet}
+	self.handler.Invoke(&ctx)
 }

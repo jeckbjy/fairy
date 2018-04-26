@@ -58,7 +58,7 @@ func (srv *Server) Start(host string) {
 	register(soaRegisterReq{}, srv.onRegister)
 
 	// create transport
-	tran := tcp.NewTransport()
+	tran := tcp.NewTran()
 	tran.AddFilters(
 		filter.NewFrame(frame.NewVarintLength()),
 		filter.NewPacket(identity.NewInteger(), codec.NewGob()),

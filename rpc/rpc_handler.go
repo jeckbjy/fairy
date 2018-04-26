@@ -2,32 +2,25 @@ package rpc
 
 import (
 	"github.com/jeckbjy/fairy"
-	"github.com/jeckbjy/fairy/log"
 )
 
-func newHandler(cb fairy.HandlerCB, pro fairy.Promise) *zRpcHandler {
-	rh := &zRpcHandler{cb: cb, promise: pro}
-	return rh
-}
-
-type zRpcHandler struct {
+type RPCHandler struct {
 	cb      fairy.HandlerCB
 	promise fairy.Promise
 }
 
-func (rh *zRpcHandler) GetQueueId() int {
+func (h *RPCHandler) QueueID() int {
 	return 0
 }
 
-func (rh *zRpcHandler) Invoke(conn fairy.Conn, packet fairy.Packet) {
-	defer log.Catch()
-	rh.cb(conn, packet)
+func (h *RPCHandler) Invoke(ctx *fairy.HandlerCtx) {
+	h.cb(ctx)
 
-	if rh.promise != nil {
-		if packet.IsSuccess() {
-			rh.promise.SetSuccess()
+	if h.promise != nil {
+		if ctx.IsSuccess() {
+			h.promise.SetSuccess()
 		} else {
-			rh.promise.SetFailure()
+			h.promise.SetFailure()
 		}
 	}
 }
