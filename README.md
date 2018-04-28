@@ -6,7 +6,6 @@
 - 支持telnet协议
 - 支持protobuf,json,xml,gob编码
 - 支持简单rpc调用
-- 支持简单的soa服务发现
 - 支持灵活的线程模型以及默认的消息回调处理
 - 支持高效定时器
 - 部分支持future/promise模式(TODO)
@@ -17,49 +16,47 @@
 package chat
 
 import (
-    "fairy"
-    "fairy/codec"
-    "fairy/filter"
-    "fairy/frame"
-    "fairy/identity"
-    "fairy/log"
-    "fairy/tcp"
+  "github.com/jeckbjy/fairy"
+  "github.com/jeckbjy/fairy/codec"
+  "github.com/jeckbjy/fairy/filter"
+  "github.com/jeckbjy/fairy/frame"
+  "github.com/jeckbjy/fairy/identity"
+  "github.com/jeckbjy/fairy/log"
+  "github.com/jeckbjy/fairy/tcp"
+  "github.com/jeckbjy/fairy/timer"
+  "github.com/jeckbjy/fairy/util"
 )
 
 type ChatMsg struct {
-    Content string
+  Content   string
+  Timestamp int64
 }
 
 func StartServer() {
-    log.Debug("start server")
-    // step1: register message
-    fairy.RegisterMessage(&ChatMsg{})
+  log.Debug("start server")
+  // step1: register message
+  fairy.RegisterMessage(&ChatMsg{})
 
-    // step2: register handler
-    fairy.RegisterHandler(&ChatMsg{}, func(conn fairy.Conn, pkt fairy.Packet) {
-        req := pkt.GetMessage().(*ChatMsg)
-        log.Debug("client msg:%+v", req.Content)
+  // step2: register handler
+  fairy.RegisterHandler(&ChatMsg{}, func(ctx *fairy.HandlerCtx) {
+    req := ctx.GetMessage().(*ChatMsg)
+    log.Debug("client msg:%+v", req) 
+    rsp := &ChatMsg{}
+    rsp.Content = "welcome boy!"
+    rsp.Timestamp = util.Now()
+    ctx.Send(rsp)
+  })
 
-        rsp := &ChatMsg{}
-        rsp.Content = "welcome boy!"
-        conn.Send(rsp)
-    })
+  // step3: create transport and add filters
+  tran := tcp.NewTran()
+  tran.AddFilters(
+    filter.NewLoggingEx(filter.LoggingFilterAll),
+    filter.NewFrame(frame.NewLine()),
+    filter.NewPacket(identity.NewString(), codec.NewJson()),
+    filter.NewExecutor())
 
-    // step3: create transport and add filters
-    tran := tcp.NewTransport()
-    tran.AddFilters(
-        filter.NewLogging(),
-        filter.NewFrame(frame.NewLine()),
-        filter.NewPacket(identity.NewString(), codec.NewJson()),
-        filter.NewExecutor())
-
-    // step4: listen or connect
-    // if client side,just need replace this line to
-    // tran.Connect("localhost:8080", 0)
-    tran.Listen(":8080", 0)
-
-    // step5: wait finish
-    fairy.WaitExit()
+  // step4: listen or connect
+  tran.Listen(":8080", 0)
 }
 ```
 
@@ -158,15 +155,15 @@ tran.AddFilters(
   - 导表工具:  https://github.com/jeckbjy/tool-table-gen
 
 - 依赖库
-  - 项目vendor使用glide管理,在含有glide.yaml的目录下，运行glide i 即可安装依赖
-  - fairy:不依赖任何库,但集成了一些开源库
+  - 已经集成的库
     - inlist: https://github.com/ionous/container
     - shortid: https://github.com/teris-io/shortid
     - sonyflake:https://github.com/sony/sonyflake
     - go-colortext:https://github.com/daviddengcn/go-colortext
-  - fairy-kcp:依赖 https://github.com/xtaci/kcp-go
-  - fairy-protobuf: 依赖 https://github.com/golang/protobuf
-  - fairy-websocket: 依赖 https://github.com/gorilla/websocket
+  - 根据需要可选的库 
+  - kcp:      https://github.com/xtaci/kcp-go
+  - protobuf: https://github.com/golang/protobuf
+  - websocket:https://github.com/gorilla/websocket
 
 - 参考框架
   - grizzly: https://javaee.github.io/grizzly/

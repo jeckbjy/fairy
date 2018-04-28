@@ -1,4 +1,4 @@
-package fairy
+package util
 
 import (
 	"encoding/csv"
@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/jeckbjy/fairy/util"
 )
 
 const TABLE_HEAD_LEN_MAX = 3
@@ -31,13 +29,13 @@ func setField(field *reflect.Value, str string) error {
 			return err
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if val, err := util.ParseInt64(str); err == nil {
+		if val, err := ParseInt64(str); err == nil {
 			field.SetInt(val)
 		} else {
 			return err
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if val, err := util.ParseUint64(str); err == nil {
+		if val, err := ParseUint64(str); err == nil {
 			field.SetUint(val)
 		} else {
 			return err
@@ -50,13 +48,13 @@ func setField(field *reflect.Value, str string) error {
 		}
 	case reflect.Slice:
 		// split，必须是整数或者浮点数?
-		tokens := util.SplitNum(str)
+		tokens := SplitNum(str)
 		if len(tokens) == 0 {
 			return nil
 		}
 		// check
 	case reflect.Map:
-		tokens := util.SplitNum(str)
+		tokens := SplitNum(str)
 		if len(tokens) == 0 {
 			return nil
 		}
@@ -79,7 +77,7 @@ func ParseTable(reader *csv.Reader, meta interface{}) (interface{}, error) {
 		return nil, nil
 	}
 
-	rtype := util.GetRealType(meta)
+	rtype := GetRealType(meta)
 	ptype := reflect.PtrTo(rtype)
 
 	// fileds reflect map
@@ -116,7 +114,7 @@ func ParseTable(reader *csv.Reader, meta interface{}) (interface{}, error) {
 		line := lines[i]
 		record := reflect.New(rtype)
 
-		col := util.MinInt(len(line), colNum)
+		col := MinInt(len(line), colNum)
 		// foreach column
 		for j := 0; j < col; j++ {
 			fieldIndex := heads[j].field
