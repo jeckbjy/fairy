@@ -40,9 +40,19 @@ type Dispatcher struct {
 	uncaught Handler
 }
 
-/**
- * key:int,uint，string或者类，数字代表id查找，字符串或者类代表用名字查找
- */
+func (self *Dispatcher) GetNameMap() HandlerNameMap {
+	return self.nameMap
+}
+
+func (self *Dispatcher) GetIDMap() HandlerIdMap {
+	return self.idMap
+}
+
+func (self *Dispatcher) GetIDArray() []Handler {
+	return self.idArray
+}
+
+// key:int,uint，string或者类，数字代表id查找，字符串或者类代表用名字查找
 func (self *Dispatcher) Regsiter(key interface{}, handler Handler) {
 	switch key.(type) {
 	case int:
