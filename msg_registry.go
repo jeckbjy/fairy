@@ -25,7 +25,7 @@ func NewRegistry() *Registry {
 	return registry
 }
 
-// 消息元信息
+// MsgInfo 消息元信息
 type MsgInfo struct {
 	Id   uint
 	Name string

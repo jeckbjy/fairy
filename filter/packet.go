@@ -7,8 +7,8 @@ import (
 	"github.com/jeckbjy/fairy/rpc"
 )
 
-func NewPacket(identity fairy.Identity, codec fairy.Codec) *zPacketFilter {
-	filter := &zPacketFilter{}
+func NewPacket(identity fairy.Identity, codec fairy.Codec) *PacketFilter {
+	filter := &PacketFilter{}
 	filter.Identity = identity
 	filter.Codec = codec
 	filter.Registry = fairy.GetRegistry()
@@ -16,8 +16,8 @@ func NewPacket(identity fairy.Identity, codec fairy.Codec) *zPacketFilter {
 	return filter
 }
 
-// decode:identity->UncaughtHandler->codec->dispatcher
-type zPacketFilter struct {
+// PacketFilter 创建并解析Packet
+type PacketFilter struct {
 	base.BaseFilter
 	fairy.Identity
 	fairy.Codec
@@ -25,7 +25,7 @@ type zPacketFilter struct {
 	*fairy.Dispatcher
 }
 
-func (self *zPacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
+func (self *PacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
 	// create buffer
 	data := ctx.GetMessage()
 	buffer, ok := data.(*fairy.Buffer)
@@ -43,43 +43,40 @@ func (self *zPacketFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterActio
 		return ctx.GetNextAction()
 	}
 
-	// find handler
+	// 查找handler,如果没有注册,则不解析packet的body数据
 	var handler fairy.Handler
 	if pkt.GetRpcId() != 0 {
 		handler = rpc.PopHandler(pkt.GetRpcId())
 	}
 
-	// UncaughtHandler, donot need codec
 	if handler == nil {
-		var ok bool
-		handler, ok = self.Dispatcher.GetFinalHandler(pkt.GetId(), pkt.GetName())
-		if !ok {
-			ctx.SetHandler(handler)
+		handler = self.Dispatcher.GetHandler(pkt.GetId(), pkt.GetName())
+	}
+
+	// 创建并解析消息体
+	if handler != nil {
+		msg := self.Registry.Create(pkt.GetId(), pkt.GetName())
+		if msg == nil {
 			return ctx.GetNextAction()
 		}
+
+		// codec
+		err = self.Codec.Decode(msg, buffer)
+		if err != nil {
+			ctx.ThrowError(err)
+			return ctx.GetStopAction()
+		}
+
+		pkt.SetMessage(msg)
 	}
 
-	// create msg
-	msg := self.Registry.Create(pkt.GetId(), pkt.GetName())
-	if msg == nil {
-		return ctx.GetNextAction()
-	}
+	hctx := fairy.NewHandlerCtx(ctx.GetConn(), pkt, handler, self.Dispatcher.Middlewares())
 
-	// codec
-	err = self.Codec.Decode(msg, buffer)
-	if err != nil {
-		ctx.ThrowError(err)
-		return ctx.GetStopAction()
-	}
-
-	pkt.SetMessage(msg)
-
-	ctx.SetMessage(pkt)
-	ctx.SetHandler(handler)
+	ctx.SetMessage(hctx)
 	return ctx.GetNextAction()
 }
 
-func (self *zPacketFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
+func (self *PacketFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
 	data := ctx.GetMessage()
 	if _, ok := data.(*fairy.Buffer); ok {
 		// 已经是buffer，无需编码

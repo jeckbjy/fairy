@@ -14,7 +14,6 @@ type FilterContext struct {
 	filters fairy.FilterChain
 	conn    fairy.Conn
 	message interface{}
-	handler fairy.Handler
 	err     error
 }
 
@@ -46,14 +45,6 @@ func (self *FilterContext) ThrowError(err error) fairy.FilterAction {
 	self.err = err
 	self.filters.HandleError(self.conn, err)
 	return self.GetStopAction()
-}
-
-func (self *FilterContext) SetHandler(handler fairy.Handler) {
-	self.handler = handler
-}
-
-func (self *FilterContext) GetHandler() fairy.Handler {
-	return self.handler
 }
 
 func (self *FilterContext) GetStopAction() fairy.FilterAction {

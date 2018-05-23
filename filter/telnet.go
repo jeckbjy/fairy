@@ -17,13 +17,15 @@ const (
 // TelnetCB 读处理回调
 type TelnetCB func(conn fairy.Conn, str string)
 
+// 默认的出来回调
 func defaultCB(conn fairy.Conn, str string) {
 	handler := fairy.GetDispatcher().GetHandlerByName(TelnetMsgKey)
 	if handler != nil {
 		pkt := packet.NewBase()
 		pkt.SetName(TelnetMsgKey)
 		pkt.SetMessage(str)
-		fairy.GetExecutor().Dispatch(fairy.NewPacketEvent(conn, pkt, handler))
+		ctx := fairy.NewHandlerCtx(conn, pkt, handler, fairy.GetDispatcher().Middlewares())
+		fairy.GetExecutor().Dispatch(ctx)
 	} else {
 		log.Error("cannot find telnet handler!")
 	}

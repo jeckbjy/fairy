@@ -3,6 +3,10 @@ package rpc
 import (
 	"fmt"
 
+	"github.com/jeckbjy/fairy/base"
+	"github.com/jeckbjy/fairy/timer"
+	"github.com/jeckbjy/fairy/util"
+
 	"github.com/jeckbjy/fairy"
 )
 
@@ -12,32 +16,37 @@ func PopHandler(rpcid uint64) fairy.Handler {
 }
 
 // Call Remote procedure call,result future can sync
-func Call(conn fairy.Conn, pkt fairy.Packet, timeout int64, cb fairy.HandlerCB) (fairy.Future, error) {
+func Call(conn fairy.Conn, pkt fairy.Packet, timeout int64, sync bool, cb fairy.HandlerCB) error {
 	if timeout <= 0 {
-		return nil, fmt.Errorf("rpm timeout must be greater than zero")
+		return fmt.Errorf("rpm timeout must be greater than zero")
 	}
 
-	// var rpcid int
-	// rpcid, err := util.NextID()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	rpcid, err := util.NextID()
+	if err != nil {
+		return err
+	}
 
-	// promise := base.NewPromise(conn)
-	// pkt.SetRpcId(rpcid)
-	// handler := RPCHandler{cb: cb, promise: promise}
-	// gRPCMgr.Push(rpcid, handler)
+	var promise fairy.Promise
+	if !sync {
+		promise = base.NewPromise(conn)
+	}
 
-	// timer.Start(timeout, func(t *timer.Timer) {
-	// 	// checkt timeout
-	// 	rh := gRPCMgr.Pop(rpcid)
-	// 	if rh != nil {
-	// 		pkt.SetTimeout()
-	// 		// rh.Invoke(conn, pkt)
-	// 	}
-	// })
+	pkt.SetRpcId(rpcid)
+	handler := &RPCHandler{cb: cb, promise: promise}
+	gRPCMgr.Push(rpcid, handler)
 
-	// return promise, nil
+	timer.Start(timer.ModeDelay, timeout, func() {
+		rh := gRPCMgr.Pop(rpcid)
+		if rh != nil {
+			pkt.SetTimeout()
+			ctx := fairy.NewHandlerCtx(conn, pkt, rh, fairy.GetDispatcher().Middlewares())
+			ctx.Process()
+		}
+	})
 
-	return nil, nil
+	if promise != nil {
+		promise.Wait(timeout)
+	}
+
+	return nil
 }

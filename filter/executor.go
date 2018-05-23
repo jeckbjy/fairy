@@ -5,36 +5,28 @@ import (
 	"github.com/jeckbjy/fairy/base"
 )
 
-func NewExecutor() *zExecutorFilter {
-	filter := &zExecutorFilter{Executor: fairy.GetExecutor()}
+func NewExecutor() *ExecutorFilter {
+	filter := &ExecutorFilter{Executor: fairy.GetExecutor()}
 	return filter
 }
 
 // 默认的执行线程
-type zExecutorFilter struct {
+type ExecutorFilter struct {
 	base.BaseFilter
 	*fairy.Executor
 }
 
-func (self *zExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
-	msg := ctx.GetMessage()
-	conn := ctx.GetConn()
-	pkt, ok := msg.(fairy.Packet)
+func (self *ExecutorFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
+	data := ctx.GetMessage()
+	handlerCtx, ok := data.(*fairy.HandlerCtx)
 	if !ok {
 		return ctx.GetNextAction()
 	}
 
-	handler := ctx.GetHandler()
-	if handler == nil {
-		// log
-		return ctx.GetStopAction()
-	}
-
 	if self.Executor != nil {
-		self.DispatchEx(fairy.NewPacketEvent(conn, pkt, handler), handler.QueueID())
+		self.DispatchEx(handlerCtx, handlerCtx.QueueID())
 	} else {
-		ctx := fairy.HandlerCtx{Conn: conn, Packet: pkt}
-		handler.Invoke(&ctx)
+		handlerCtx.Process()
 	}
 
 	return ctx.GetNextAction()

@@ -7,26 +7,29 @@ import (
 	"github.com/jeckbjy/fairy/util"
 )
 
-var gRPCMgr *zRpcMgr
+var gRPCMgr *RpcMgr
 
 func init() {
 	util.Once(gRPCMgr, func() {
-		gRPCMgr = &zRpcMgr{}
+		gRPCMgr = &RpcMgr{}
 	})
 }
 
-type zRpcMgr struct {
+// RpcMgr 管理RPC调用
+type RpcMgr struct {
 	handlers map[uint64]fairy.Handler
 	mux      sync.Mutex
 }
 
-func (rm *zRpcMgr) Push(rpcid uint64, rh fairy.Handler) {
+// Push 插入一条记录
+func (rm *RpcMgr) Push(rpcid uint64, rh fairy.Handler) {
 	rm.mux.Lock()
 	rm.handlers[rpcid] = rh
 	rm.mux.Unlock()
 }
 
-func (rm *zRpcMgr) Pop(rpcid uint64) fairy.Handler {
+// Pop 删除一条记录
+func (rm *RpcMgr) Pop(rpcid uint64) fairy.Handler {
 	var handler fairy.Handler
 	rm.mux.Lock()
 	if h, ok := rm.handlers[rpcid]; ok {
