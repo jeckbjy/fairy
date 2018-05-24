@@ -4,16 +4,16 @@ import (
 	"github.com/jeckbjy/fairy"
 )
 
-type RPCHandler struct {
+type Handler struct {
 	cb      fairy.HandlerCB
 	promise fairy.Promise
 }
 
-func (h *RPCHandler) QueueID() int {
+func (h *Handler) QueueID() int {
 	return 0
 }
 
-func (h *RPCHandler) Invoke(ctx *fairy.HandlerCtx) {
+func (h *Handler) Invoke(ctx *fairy.HandlerCtx) {
 	h.cb(ctx)
 
 	if h.promise != nil {

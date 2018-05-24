@@ -15,7 +15,7 @@ func PopHandler(rpcid uint64) fairy.Handler {
 	return gRPCMgr.Pop(rpcid)
 }
 
-// Call Remote procedure call,result future can sync
+// Call 远程调用
 func Call(conn fairy.Conn, pkt fairy.Packet, timeout int64, sync bool, cb fairy.HandlerCB) error {
 	if timeout <= 0 {
 		return fmt.Errorf("rpm timeout must be greater than zero")
@@ -32,7 +32,7 @@ func Call(conn fairy.Conn, pkt fairy.Packet, timeout int64, sync bool, cb fairy.
 	}
 
 	pkt.SetRpcId(rpcid)
-	handler := &RPCHandler{cb: cb, promise: promise}
+	handler := &Handler{cb: cb, promise: promise}
 	gRPCMgr.Push(rpcid, handler)
 
 	timer.Start(timer.ModeDelay, timeout, func() {
