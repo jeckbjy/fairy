@@ -5,37 +5,37 @@ type BaseChannel struct {
 	logger *Logger
 }
 
-func (self *BaseChannel) Open() {
+func (*BaseChannel) Open() {
 
 }
 
-func (self *BaseChannel) Close() {
+func (*BaseChannel) Close() {
 
 }
 
-func (self *BaseChannel) SetProperty(key string, val string) bool {
-	if self.Config.SetConfig(key, val) {
+func (bc *BaseChannel) SetProperty(key string, val string) bool {
+	if bc.Config.SetConfig(key, val) {
 		return true
 	}
 
 	return false
 }
 
-func (self *BaseChannel) GetConfig() *Config {
-	return &self.Config
+func (bc *BaseChannel) GetConfig() *Config {
+	return &bc.Config
 }
 
-func (self *BaseChannel) GetLogger() *Logger {
-	return self.logger
+func (bc *BaseChannel) GetLogger() *Logger {
+	return bc.logger
 }
 
-func (self *BaseChannel) SetLogger(logger *Logger) {
-	self.logger = logger
+func (bc *BaseChannel) SetLogger(logger *Logger) {
+	bc.logger = logger
 }
 
-func (self *BaseChannel) GetOutput(msg *Message) string {
-	if self.Config.pattern != nil {
-		return self.Config.pattern.Format(msg)
+func (bc *BaseChannel) GetOutput(msg *Message) string {
+	if bc.Config.pattern != nil {
+		return bc.Config.pattern.Format(msg)
 	}
 
 	return msg.Output

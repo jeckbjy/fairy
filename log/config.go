@@ -10,6 +10,7 @@ const (
 	CFG_FORMAT = "format"
 )
 
+// Config 通用的Channel配置
 type Config struct {
 	Enable  bool
 	Level   int
@@ -17,33 +18,34 @@ type Config struct {
 	pattern *Pattern
 }
 
-func (self *Config) Init() {
-	self.Enable = true
-	self.Level = LEVEL_TRACE
+func (c *Config) Init() {
+	c.Enable = true
+	c.Level = LEVEL_TRACE
+	c.SetFormat(DefaultPattern)
 }
 
-func (self *Config) SetFormat(format string) {
-	if self.pattern == nil {
-		self.pattern = NewPattern()
+func (c *Config) SetFormat(format string) {
+	if c.pattern == nil {
+		c.pattern = NewPattern()
 	}
 
-	self.Format = format
-	self.pattern.Parse(format)
+	c.Format = format
+	c.pattern.Parse(format)
 }
 
-func (self *Config) SetConfig(key string, val string) bool {
+func (c *Config) SetConfig(key string, val string) bool {
 	switch key {
 	case "enable":
-		self.Enable, _ = strconv.ParseBool(val)
+		c.Enable, _ = strconv.ParseBool(val)
 		return true
 	case "level":
 		level, ok := ParseLevel(val)
 		if ok {
-			self.Level = level
+			c.Level = level
 		}
 		return true
 	case "format":
-		self.SetFormat(val)
+		c.SetFormat(val)
 		return true
 	}
 

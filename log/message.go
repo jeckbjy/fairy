@@ -1,5 +1,7 @@
 package log
 
+import "fmt"
+
 // Message for logger channel
 type Message struct {
 	Level    int
@@ -8,6 +10,18 @@ type Message struct {
 	Line     int
 	Timetamp int64
 	Text     string
-	Uid      string // TODO:support uid
-	Output   string // 最终结果
+	Output   string            // final text
+	Data     map[string]string // 扩展数据
+}
+
+// Option 自定义Key-Value
+type Option struct {
+	Key string
+	Val string
+}
+
+// WithOption example: WithOption("uid", "xxxxx")
+func WithOption(key string, val interface{}) *Option {
+	op := &Option{Key: key, Val: fmt.Sprintf("%+v", val)}
+	return op
 }

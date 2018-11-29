@@ -5,34 +5,33 @@ import (
 )
 
 type Tran struct {
-	Config
-	filters fairy.FilterChain
+	chain fairy.IFilterChain
 }
 
-func (self *Tran) SetFilterChain(filters fairy.FilterChain) {
-	self.filters = filters
+func (tran *Tran) GetChain() fairy.IFilterChain {
+	return tran.chain
 }
 
-func (self *Tran) GetFilterChain() fairy.FilterChain {
-	return self.filters
+func (tran *Tran) SetOptions(...fairy.Option) {
 }
 
-func (self *Tran) AddFilters(filters ...fairy.Filter) {
-	if self.filters == nil {
-		self.filters = NewFilterChain()
+func (tran *Tran) AddFilters(filters ...fairy.IFilter) {
+	if tran.chain == nil {
+		tran.chain = NewChain()
 	}
 
-	// auto add filter
-	if self.filters.Len() == 0 {
+	// Auto Add TransferFilter
+	if tran.chain.Len() == 0 {
 		if _, ok := filters[0].(*TransferFilter); !ok {
-			self.filters.AddLast(NewTransferFilter())
+			tran.chain.AddLast(NewTransferFilter())
 		}
 	}
 
-	for _, filter := range filters {
-		self.filters.AddLast(filter)
-	}
+	tran.chain.AddLast(filters...)
 }
 
-func (self *Tran) Start() {
+func (tran *Tran) Start() {
+}
+
+func (tran *Tran) Stop() {
 }

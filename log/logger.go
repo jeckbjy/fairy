@@ -9,8 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/jeckbjy/fairy/util"
+	"time"
 )
 
 var gLogger *Logger
@@ -28,7 +27,6 @@ func GetLogger() *Logger {
 func NewLogger() *Logger {
 	logger := &Logger{}
 	logger.Config.Init()
-	logger.Config.SetFormat(DEFAULT_PATTERN)
 	logger.cfgPath = "./logger.cfg"
 	logger.sync = false
 	logger.callerSkip = 2
@@ -39,14 +37,14 @@ func NewLogger() *Logger {
 	return logger
 }
 
-// 线程安全注意：默认异步执行，所有配置需要在Start前执行,只有Message队列是线程安全的
+// Logger 线程安全注意：默认异步执行，所有配置需要在Start前执行,只有Message队列是线程安全的
 type Logger struct {
 	Config
 	cfgPath    string      // 配置文件路径，默认./logger.cfg
 	sync       bool        // 是否同步
 	callerSkip int         // 忽略堆栈
 	stopped    bool        // 是否运行
-	channels   []Channel   // 所有channel
+	channels   []IChannel  // 所有channel
 	messages   *list.List  // 消息队列
 	mutex      *sync.Mutex // mutex
 	cond       *sync.Cond  // 用于线程同步
@@ -70,7 +68,7 @@ func (l *Logger) AddDefaultChannels() {
 }
 
 // AddChannel add channel
-func (l *Logger) AddChannel(channel Channel) {
+func (l *Logger) AddChannel(channel IChannel) {
 	channel.Open()
 	l.channels = append(l.channels, channel)
 }
@@ -86,8 +84,8 @@ func (l *Logger) DelChannel(name string) {
 	}
 }
 
-// GetChannel : find channel
-func (l *Logger) GetChannel(name string) Channel {
+// GetChannel find channel by name
+func (l *Logger) GetChannel(name string) IChannel {
 	for _, channel := range l.channels {
 		if strings.EqualFold(channel.Name(), name) {
 			return channel
@@ -138,15 +136,14 @@ func (l *Logger) Load() error {
 	return nil
 }
 
-/*
-example:
-global: prefix . or logger
-SetProperty(".level", "debug")
-SetProterty("logger.level", "debug")
-channel:
-SetProperty("file.level", "debug")
-SetProperty("file.path", "./server.log")
-*/
+// SetProperty set channel or global property
+// example:
+// global: prefix . or logger
+// SetProperty(".level", "debug")
+// SetProterty("logger.level", "debug")
+// channel:
+// SetProperty("file.level", "debug")
+// SetProperty("file.path", "./server.log")
 func (l *Logger) SetProperty(key string, val string) error {
 	index := strings.Index(key, ".")
 	if index == -1 {
@@ -185,7 +182,7 @@ func (l *Logger) SetProperty(key string, val string) error {
 	return nil
 }
 
-func (l *Logger) Write(level int, uid string, format string, args ...interface{}) {
+func (l *Logger) Write(level int, format string, args ...interface{}) {
 	if !l.Enable || int(level) < l.Level {
 		// not open
 		return
@@ -208,9 +205,8 @@ func (l *Logger) Write(level int, uid string, format string, args ...interface{}
 	msg.Text = text
 	msg.File = file
 	msg.Line = line
-	msg.Timetamp = util.Now()
+	msg.Timetamp = time.Now().UnixNano() / int64(time.Millisecond)
 	msg.FileName = fileName
-	msg.Uid = uid
 
 	if l.Config.pattern != nil {
 		msg.Output = l.Config.pattern.Format(msg)
@@ -248,8 +244,10 @@ func (l *Logger) Run() {
 		for !l.stopped && l.messages.Len() == 0 {
 			l.cond.Wait()
 		}
-		util.SwapList(&messages, l.messages)
+		messages = *l.messages
+		l.messages.Init()
 		l.mutex.Unlock()
+
 		// process
 		for iter := messages.Front(); iter != nil; iter = iter.Next() {
 			msg := iter.Value.(*Message)

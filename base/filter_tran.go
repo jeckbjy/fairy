@@ -1,35 +1,42 @@
 package base
 
-import "github.com/jeckbjy/fairy"
+import (
+	"github.com/jeckbjy/fairy"
+)
 
 func NewTransferFilter() *TransferFilter {
-	filter := &TransferFilter{}
-	return filter
+	return &TransferFilter{}
 }
 
+// TransferFilter 底层的消息发送与接收,必须放在Chain的第一个
 type TransferFilter struct {
-	BaseFilter
+	Filter
 }
 
-func (self *TransferFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
-	// 先获得buffer
+func (tf *TransferFilter) Name() string {
+	return "TransferFilter"
+}
+
+func (self *TransferFilter) HandleRead(ctx fairy.IFilterCtx) {
+	// 获得读缓存
 	conn := ctx.GetConn()
-	buffer := conn.Read()
-	if buffer == nil || buffer.Empty() {
-		return ctx.GetStopAction()
+	data := conn.Read()
+	if data == nil || data.Empty() {
+		return
 	}
 
-	buffer.Rewind()
-	ctx.SetMessage(buffer)
-	return ctx.GetNextAction()
+	// 移动到开始位置
+	// data.Seek(0, io.SeekStart)
+	data.Rewind()
+	ctx.SetData(data)
+	ctx.Next()
 }
 
-func (self *TransferFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
+func (self *TransferFilter) HandleWrite(ctx fairy.IFilterCtx) {
 	// 底层发送
-	if buffer, ok := ctx.GetMessage().(*fairy.Buffer); ok {
-		conn := ctx.GetConn()
-		conn.Write(buffer)
+	if buffer, ok := ctx.GetData().(*fairy.Buffer); ok {
+		ctx.GetConn().Write(buffer)
 	}
 
-	return ctx.GetNextAction()
+	ctx.Next()
 }

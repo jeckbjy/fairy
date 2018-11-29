@@ -2,9 +2,9 @@ package timer
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jeckbjy/fairy/container/inlist"
-	"github.com/jeckbjy/fairy/util"
 )
 
 const (
@@ -93,7 +93,7 @@ func (self *Timer) run() {
 	case ModeTimestamp:
 		self.timestamp = self.delay
 	case ModeDelay, ModeLoop:
-		self.timestamp = util.Now() + self.delay
+		self.timestamp = time.Now().UnixNano()/int64(time.Millisecond) + self.delay
 	}
 
 	self.engine.AddTimer(self)

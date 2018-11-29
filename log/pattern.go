@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/jeckbjy/fairy/util"
 )
 
 /// This Formatter allows for custom formatting of
@@ -57,17 +55,24 @@ import (
 ///   * %[name] - the value of the message parameter with the given name
 ///   * %% - percent sign
 
-// width %6s
-// for json pattern :{"time"="%y-%m=%d %H:%M:%S", "level"="%q", "file"="%U:%u", "text"="%t"}
-const DEFAULT_PATTERN = "[%q %y-%m-%d %H:%M:%S %U[10]:%u[3]] %t"
+/// json pattern like :{"time"="%y-%m=%d %H:%M:%S", "level"="%q", "file"="%U:%u", "text"="%t"}
+/// DefaultPattern set default pattern
+const DefaultPattern = "[%q %y-%m-%d %H:%M:%S %U[10]:%u[3]] %t"
 
 func NewPattern() *Pattern {
 	p := &Pattern{}
 	return p
 }
 
+type Action struct {
+	Key      rune
+	Prepend  string // xxx%
+	Property string // %[name]
+}
+
+// Pattern 输出格式解析
 type Pattern struct {
-	actions util.PatternActionArray
+	actions []*Action
 }
 
 func buildWidth(builder *bytes.Buffer, text string, width string) {
@@ -80,12 +85,16 @@ func buildWidth(builder *bytes.Buffer, text string, width string) {
 	}
 }
 
-func (self *Pattern) Format(msg *Message) string {
+func (pattern *Pattern) Format(msg *Message) string {
 	// fmt.Printf("%+v, %+v\n", msg.Level, LEVEL_ALL)
 	builder := bytes.Buffer{}
-	ts := util.GetTimeByMsec(msg.Timetamp)
-	// simple mode
-	for _, action := range self.actions {
+
+	timestamp := msg.Timetamp
+	sec := timestamp / 1000
+	nsec := (timestamp - sec*1000) * 1000
+	ts := time.Unix(sec, nsec)
+
+	for _, action := range pattern.actions {
 		builder.WriteString(action.Prepend)
 		switch action.Key {
 		case 's': // TODO:source
@@ -135,15 +144,21 @@ func (self *Pattern) Format(msg *Message) string {
 		case 'H':
 			builder.WriteString(fmt.Sprintf("%02d", ts.Hour()))
 		case 'h':
-			builder.WriteString(fmt.Sprintf("%02d", util.HourAMPM(ts.Hour())))
+			hour := ts.Hour()
+			if hour < 1 {
+				hour = 12
+			} else if hour > 12 {
+				hour -= 12
+			}
+			builder.WriteString(fmt.Sprintf("%02d", hour))
 		case 'a':
-			if util.IsAM(ts.Hour()) {
+			if ts.Hour() < 12 {
 				builder.WriteString("am")
 			} else {
 				builder.WriteString("pm")
 			}
 		case 'A':
-			if util.IsAM(ts.Hour()) {
+			if ts.Hour() < 12 {
 				builder.WriteString("AM")
 			} else {
 				builder.WriteString("PM")
@@ -161,7 +176,9 @@ func (self *Pattern) Format(msg *Message) string {
 		case 'E':
 			builder.WriteString(fmt.Sprintf("%d", ts.Unix()))
 		case 'v': // source width
-		case 'x': // property
+		case 'x':
+			// property
+			builder.WriteString(msg.Data[action.Property])
 		case 'L':
 		case '%':
 			builder.WriteByte('%')
@@ -173,7 +190,51 @@ func (self *Pattern) Format(msg *Message) string {
 	return builder.String()
 }
 
-// 通用解析规则%?[prop]
-func (self *Pattern) Parse(format string) {
-	self.actions = util.ParsePattern(format)
+// Parse 通用解析规则%xx[prop]
+func (pattern *Pattern) Parse(format string) {
+	actions := make([]*Action, 0)
+
+	end := len(format)
+	cur := 0
+	for cur < end {
+		act := &Action{}
+		// parse prepend
+		for beg := cur; ; cur++ {
+			if cur >= end || format[cur] == '%' {
+				if beg < cur {
+					act.Prepend = format[beg:cur]
+				}
+				break
+			}
+		}
+
+		// check end
+		if cur == end {
+			actions = append(actions, act)
+			break
+		}
+		cur++ // ignore %
+
+		// parse key
+		if format[cur] == '[' {
+			act.Key = 'x'
+		} else {
+			act.Key = rune(format[cur])
+			cur++
+		}
+		// parse property
+		if cur < end && format[cur] == '[' {
+			cur++
+			for beg := cur; cur < end; cur++ {
+				if format[cur] == ']' {
+					act.Property = format[beg:cur]
+					cur++
+					break
+				}
+			}
+		}
+		actions = append(actions, act)
+	}
+
+	pattern.actions = actions
 }

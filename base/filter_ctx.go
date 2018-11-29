@@ -1,64 +1,102 @@
 package base
 
-import "github.com/jeckbjy/fairy"
+import (
+	"errors"
+	"sync"
 
-func NewContext(filterChain fairy.FilterChain, conn fairy.Conn) *FilterContext {
-	ctx := &FilterContext{}
-	ctx.conn = conn
-	ctx.filters = filterChain
+	"github.com/jeckbjy/fairy"
+)
+
+var errBadIndex = errors.New("filter index out of range")
+var ctxPool = &FilterCtxPool{}
+
+// FilterCtxPool context pool
+type FilterCtxPool struct {
+	items *FilterCtx
+	count int
+	mutex sync.Mutex
+}
+
+func (pool *FilterCtxPool) Alloc(chain fairy.IFilterChain, conn fairy.IConn, cb callback) *FilterCtx {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	var ctx *FilterCtx
+	if pool.items != nil {
+		ctx = pool.items
+		pool.items = ctx.next
+		ctx.next = nil
+	} else {
+		ctx = &FilterCtx{}
+	}
+
+	ctx.init(chain, conn, cb)
 	return ctx
 }
 
-type FilterContext struct {
+func (pool *FilterCtxPool) Free(ctx *FilterCtx) {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+	// TODO:auto shrink when count > 2 * connSize
+	ctx.next = pool.items
+	pool.items = ctx
+	pool.count++
+}
+
+type callback func(ctx fairy.IFilterCtx, index int)
+
+type FilterCtx struct {
 	AttrMap
-	filters fairy.FilterChain
-	conn    fairy.Conn
-	message interface{}
-	err     error
+	chain fairy.IFilterChain
+	cb    callback
+	index int
+	conn  fairy.IConn
+	data  interface{}
+	next  *FilterCtx
 }
 
-func (self *FilterContext) GetConn() fairy.Conn {
-	return self.conn
+func (ctx *FilterCtx) init(chain fairy.IFilterChain, conn fairy.IConn, cb callback) {
+	ctx.chain = chain
+	ctx.cb = cb
+	ctx.index = -1
+	ctx.conn = conn
+	ctx.data = nil
 }
 
-func (self *FilterContext) SetMessage(msg interface{}) {
-	self.message = msg
+func (ctx *FilterCtx) GetConn() fairy.IConn {
+	return ctx.conn
 }
 
-func (self *FilterContext) GetMessage() interface{} {
-	return self.message
+func (ctx *FilterCtx) SetData(data interface{}) {
+	ctx.data = data
 }
 
-func (self *FilterContext) GetBuffer() *fairy.Buffer {
-	return nil
+func (ctx *FilterCtx) GetData() interface{} {
+	return ctx.data
 }
 
-func (self *FilterContext) GetError() error {
-	return self.err
+// Error
+func (ctx *FilterCtx) Error(err error) {
+	ctx.chain.HandleError(ctx.conn, err)
 }
 
-func (self *FilterContext) SetError(err error) {
-	self.err = err
+func (ctx *FilterCtx) Next() {
+	ctx.index++
+	if ctx.index < ctx.chain.Len() {
+		ctx.cb(ctx, ctx.index)
+	}
 }
 
-func (self *FilterContext) ThrowError(err error) fairy.FilterAction {
-	self.err = err
-	self.filters.HandleError(self.conn, err)
-	return self.GetStopAction()
+func (ctx *FilterCtx) Jump(index int) error {
+	ctx.index = index
+	if ctx.index > -1 && ctx.index < ctx.chain.Len() {
+		ctx.cb(ctx, ctx.index)
+		return nil
+	}
+
+	return errBadIndex
 }
 
-func (self *FilterContext) GetStopAction() fairy.FilterAction {
-	return gStopAction
-}
-
-func (self *FilterContext) GetNextAction() fairy.FilterAction {
-	return gNextAction
-}
-
-func (self *FilterContext) GetLastAction() fairy.FilterAction {
-	return gLastAction
-}
-
-func (self *FilterContext) GetFirstAction() fairy.FilterAction {
-	return gFirstAction
+func (ctx *FilterCtx) JumpBy(name string) error {
+	return ctx.Jump(ctx.chain.IndexOf(name))
 }

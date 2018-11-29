@@ -1,31 +1,29 @@
 package base
 
-import "github.com/jeckbjy/fairy"
+import (
+	"github.com/jeckbjy/fairy"
+)
 
-// BaseFilter 实现所有接口
-type BaseFilter struct {
+// Filter 实现IFilter接口
+type Filter struct {
 }
 
-func (filter *BaseFilter) Stateless() bool {
-	return true
+func (f *Filter) HandleRead(ctx fairy.IFilterCtx) {
+	ctx.Next()
 }
 
-func (self *BaseFilter) HandleRead(ctx fairy.FilterContext) fairy.FilterAction {
-	return ctx.GetNextAction()
+func (f *Filter) HandleWrite(ctx fairy.IFilterCtx) {
+	ctx.Next()
 }
 
-func (self *BaseFilter) HandleWrite(ctx fairy.FilterContext) fairy.FilterAction {
-	return ctx.GetNextAction()
+func (f *Filter) HandleOpen(ctx fairy.IFilterCtx) {
+	ctx.Next()
 }
 
-func (self *BaseFilter) HandleOpen(ctx fairy.FilterContext) fairy.FilterAction {
-	return ctx.GetNextAction()
+func (f *Filter) HandleClose(ctx fairy.IFilterCtx) {
+	ctx.Next()
 }
 
-func (self *BaseFilter) HandleClose(ctx fairy.FilterContext) fairy.FilterAction {
-	return ctx.GetNextAction()
-}
-
-func (self *BaseFilter) HandleError(ctx fairy.FilterContext) fairy.FilterAction {
-	return ctx.GetNextAction()
+func (f *Filter) HandleError(ctx fairy.IFilterCtx) {
+	ctx.Next()
 }

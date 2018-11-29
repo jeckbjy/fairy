@@ -5,20 +5,21 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jeckbjy/fairy/exit"
+
 	"github.com/jeckbjy/fairy"
 	"github.com/jeckbjy/fairy/container/inlist"
-	"github.com/jeckbjy/fairy/util"
 )
 
 var gEngine *Engine
 
+func init() {
+	gEngine = NewEngine(fairy.GetExecutor())
+	gEngine.Start()
+}
+
 // GetEngine 同步主线程定时器
 func GetEngine() *Engine {
-	util.OnceEx(gEngine, func() {
-		gEngine = NewEngine(fairy.GetExecutor())
-		gEngine.Start()
-	})
-
 	return gEngine
 }
 
@@ -46,7 +47,7 @@ type Engine struct {
 func (self *Engine) create(exec *fairy.Executor) {
 	self.SetInterval(TIME_INTERVAL)
 	self.executor = exec
-	self.timestamp = util.Now()
+	self.timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	self.start = self.timestamp
 	self.count = 0
 	self.pendings = inlist.New()
@@ -103,7 +104,7 @@ func (self *Engine) Run() {
 
 func (self *Engine) Start() {
 	if self.stopped {
-		util.RegisterExit(self)
+		exit.Add(self.Stop)
 		self.stopped = false
 		go self.Run()
 	}
@@ -115,12 +116,8 @@ func (self *Engine) Stop() {
 	}
 }
 
-func (self *Engine) OnExit() {
-	self.Stop()
-}
-
 func (self *Engine) Update() {
-	newTime := util.Now()
+	newTime := time.Now().UnixNano() / int64(time.Millisecond)
 	self.UpdateBy(newTime)
 }
 
@@ -138,7 +135,7 @@ func (self *Engine) UpdateBy(newTime int64) {
 
 	if self.executor != nil && pendings.Len() > 0 {
 		self.pendings.MoveBackList(&pendings)
-		self.executor.DispatchCB(func() {
+		self.executor.Dispatch(0, func() {
 			self.Invoke()
 		})
 	}

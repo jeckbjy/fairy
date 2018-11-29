@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path"
-
-	"github.com/jeckbjy/fairy/util"
 )
 
 func NewFileChannel() *FileChannel {
+	filename := path.Base(os.Args[0])
 	channel := &FileChannel{}
 	channel.Init()
-	channel.path = fmt.Sprintf("./%+v.log", util.GetExecName())
+	channel.path = fmt.Sprintf("./%+v.log", filename)
 	return channel
 }
 
-// TODO:other strategy:rotate
+// FileChannel TODO:other strategy:rotate
 type FileChannel struct {
 	BaseChannel
 	path string

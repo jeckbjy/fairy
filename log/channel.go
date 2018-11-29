@@ -1,6 +1,7 @@
 package log
 
-type Channel interface {
+// IChannel log channel
+type IChannel interface {
 	Name() string
 	Open()
 	Close()
@@ -8,5 +9,5 @@ type Channel interface {
 	SetProperty(key string, val string) bool
 	GetConfig() *Config
 	GetLogger() *Logger
-	SetLogger(logger *Logger) 
+	SetLogger(logger *Logger)
 }
