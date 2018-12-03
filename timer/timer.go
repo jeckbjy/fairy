@@ -24,6 +24,7 @@ func Start(delay int, period int, cb Callback) *Timer {
 // StartAt 在某个固定时间执行
 func StartAt(timestamp int64, cb Callback) *Timer {
 	t := New(cb)
+	t.timestamp = timestamp
 	t.Start()
 	return t
 }
