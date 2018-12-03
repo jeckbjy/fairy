@@ -2,254 +2,174 @@ package timer
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
-
-	"github.com/jeckbjy/fairy/exit"
-
-	"github.com/jeckbjy/fairy"
-	"github.com/jeckbjy/fairy/container/inlist"
 )
 
-var gEngine *Engine
+var gEngine = NewEngine()
 
-func init() {
-	gEngine = NewEngine(fairy.GetExecutor())
-	gEngine.Start()
-}
-
-// GetEngine 同步主线程定时器
+// GetEngine get global timer engine
 func GetEngine() *Engine {
 	return gEngine
 }
 
-// NewEngine 创建一个Engine
-func NewEngine(executor *fairy.Executor) *Engine {
-	engine := &Engine{}
-	engine.create(executor)
-	return engine
+// NewEngine create timer engine
+func NewEngine() *Engine {
+	e := &Engine{}
+	e.init()
+	return e
 }
 
-// Engine use Hashed and Hierarchical Timing Wheels
+// Engine Hashed and Hierarchical Timing Wheels
+// thread safe
 type Engine struct {
-	start     int64           // 起始时间
-	timestamp int64           // 当前时间戳
-	interval  int64           // 最小触发时间间隔
-	count     int32           // timer个数
-	wheels    []*Wheel        // 桶
-	executor  *fairy.Executor //
-	pendings  *inlist.List
-	mutex     *sync.Mutex
-	stopped   bool
-	timeMax   uint64
+	stopped   bool       // 是否在执行
+	start     int64      // 起始时间
+	timestamp int64      // 当前时间戳
+	count     int        // timer个数
+	wheels    []*twheel  // 时间桶
+	mutex     sync.Mutex // 锁
+	timeMax   uint64     // 当前最大
+	interval  int        // 间隔
 }
 
-func (self *Engine) create(exec *fairy.Executor) {
-	self.SetInterval(TIME_INTERVAL)
-	self.executor = exec
-	self.timestamp = time.Now().UnixNano() / int64(time.Millisecond)
-	self.start = self.timestamp
-	self.count = 0
-	self.pendings = inlist.New()
-	self.stopped = true
-	self.mutex = &sync.Mutex{}
+func (e *Engine) init() {
+	e.stopped = true
+	e.timestamp = time.Now().UnixNano() / int64(time.Millisecond)
+	e.start = e.timestamp
+	e.count = 0
+	e.interval = cfgTimeInterval
 
 	// create wheel
-	for i := 0; i < WHEEL_NUM; i++ {
-		self.newWheel()
+	for i := 0; i < cfgWheelNum; i++ {
+		e.newWheel()
+	}
+
+	go e.Start()
+}
+
+func (e *Engine) newWheel() {
+	wheel := &twheel{}
+	wheel.init(len(e.wheels))
+	e.timeMax = wheel.timeMax
+	e.wheels = append(e.wheels, wheel)
+}
+
+func (e *Engine) loop() {
+	for !e.stopped {
+		e.Update()
+		time.Sleep(time.Duration(e.interval) * time.Millisecond)
 	}
 }
 
-func (self *Engine) newWheel() {
-	wheel := &Wheel{}
-	wheel.Create(len(self.wheels))
-	self.timeMax = wheel.timeMax
-	self.wheels = append(self.wheels, wheel)
-}
-
-func (self *Engine) SetExecutor(executor *fairy.Executor) {
-	self.executor = executor
-}
-
-func (self *Engine) SetInterval(interval int) {
-	self.interval = int64(interval)
-}
-
-func (self *Engine) AddTimer(timer *Timer) {
-	if timer.timestamp > self.timestamp {
-		self.mutex.Lock()
-		atomic.AddInt32(&self.count, 1)
-		timer.setRunning(true)
-		self.push(timer)
-		self.mutex.Unlock()
+func (e *Engine) Start() {
+	if e.stopped {
+		e.stopped = false
+		go e.loop()
 	}
 }
 
-func (self *Engine) DelTimer(timer *Timer) {
-	self.mutex.Lock()
-	if timer.isRunning() {
-		atomic.AddInt32(&self.count, -1)
-		timer.setRunning(false)
-		timer.List().Remove(timer)
-	}
-	self.mutex.Unlock()
+func (e *Engine) Stop() {
+	e.stopped = true
 }
 
-func (self *Engine) Run() {
-	for !self.stopped {
-		self.Update()
-		time.Sleep(time.Duration(self.interval) * time.Millisecond)
-	}
+// Update 以当前时间更新
+func (e *Engine) Update() {
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	e.Tick(timestamp)
 }
 
-func (self *Engine) Start() {
-	if self.stopped {
-		exit.Add(self.Stop)
-		self.stopped = false
-		go self.Run()
-	}
-}
+// Tick 检测定时器
+func (e *Engine) Tick(newTime int64) {
+	oldTime := e.timestamp
+	e.timestamp = newTime
 
-func (self *Engine) Stop() {
-	if !self.stopped {
-		self.stopped = true
-	}
-}
+	pendings := tlist{}
+	e.mutex.Lock()
 
-func (self *Engine) Update() {
-	newTime := time.Now().UnixNano() / int64(time.Millisecond)
-	self.UpdateBy(newTime)
-}
-
-func (self *Engine) UpdateBy(newTime int64) {
-	oldTime := self.timestamp
-	self.timestamp = newTime
-	self.mutex.Lock()
-	pendings := inlist.List{}
-
-	if newTime <= oldTime {
-		self.rebuild(&pendings, oldTime, newTime)
+	if newTime < oldTime {
+		// 向前调时间导致时间变小
+		// 收集所有Timer并重新计算
+		for _, wheel := range e.wheels {
+			wheel.index = 0
+			for _, slot := range wheel.slots {
+				e.calcTimers(&pendings, slot)
+			}
+		}
 	} else {
-		self.tick(&pendings, oldTime, newTime)
-	}
+		// 正常tick
+		ticks := newTime - oldTime
+		for i := int64(0); i < ticks; i++ {
+			// wheels[0][0] 已经到时间
+			e.calcTimers(&pendings, e.wheels[0].current())
+			// cascade 向前走一个刻度
+			for i := 0; i < len(e.wheels); i++ {
+				if !e.wheels[i].step() {
+					// 还没有走一圈
+					break
+				}
 
-	if self.executor != nil && pendings.Len() > 0 {
-		self.pendings.MoveBackList(&pendings)
-		self.executor.Dispatch(0, func() {
-			self.Invoke()
-		})
-	}
+				if i+1 == len(e.wheels) {
+					// 溢出,新建一个
+					e.newWheel()
+					break
+				}
 
-	self.mutex.Unlock()
-
-	// async invoke if no exector
-	if pendings.Len() > 0 {
-		self.triggerAllTimer(&pendings)
-	}
-}
-
-func (self *Engine) Invoke() {
-	// invoke all pending timers
-	pendings := inlist.List{}
-	self.mutex.Lock()
-	pendings.MoveBackList(self.pendings)
-	self.pendings.Init()
-	self.mutex.Unlock()
-
-	// invoke
-	self.triggerAllTimer(&pendings)
-}
-
-func (self *Engine) triggerAllTimer(pendings *inlist.List) {
-	for iter := pendings.Front(); iter != nil; {
-		timer := iter.(*Timer)
-		iter = inlist.Next(iter)
-		pendings.Remove(timer)
-		atomic.AddInt32(&self.count, -1)
-		timer.call()
-	}
-}
-
-func (self *Engine) rebuild(pendings *inlist.List, oldTime int64, newTime int64) {
-	for _, wheel := range self.wheels {
-		wheel.index = 0
-		for _, slot := range wheel.slots {
-			pendings.MoveBackList(slot)
-		}
-	}
-
-	//
-	for iter := pendings.Front(); iter != nil; {
-		timer := iter.(*Timer)
-		iter = inlist.Next(iter)
-		timer.reset(oldTime, newTime)
-
-		//
-		if timer.timestamp >= newTime {
-			pendings.Remove(timer)
-			self.push(timer)
-		}
-	}
-}
-
-func (self *Engine) tick(pendings *inlist.List, oldTime int64, newTime int64) {
-	// tick all timer
-	ticks := newTime - oldTime
-	for i := int64(0); i < ticks; i++ {
-		wheel := self.wheels[0]
-		// process timer list
-		pendings.MoveBackList(wheel.Current())
-		// step tick
-		self.cascade(pendings)
-	}
-}
-
-func (self *Engine) cascade(pendings *inlist.List) {
-	for i := 0; i < len(self.wheels); i++ {
-		if !self.wheels[i].Step() {
-			break
-		}
-
-		if i+1 == len(self.wheels) {
-			self.newWheel()
-			break
-		}
-
-		// rehash next wheel
-		slots := self.wheels[i+1].Current()
-		for iter := slots.Front(); iter != nil; {
-			timer := iter.(*Timer)
-			iter = inlist.Next(iter)
-			slots.Remove(timer)
-
-			if timer.timestamp <= self.timestamp {
-				pendings.PushBack(timer)
-			} else {
-				self.push(timer)
+				e.calcTimers(&pendings, e.wheels[i+1].current())
 			}
 		}
 	}
+
+	e.mutex.Unlock()
+
+	// 执行timer
+	for node := pendings.head; node != nil; {
+		curr := node
+		// TODO:这里可能会有线程安全问题,会修改timer的list值
+		node = pendings.remove(node)
+		curr.invoke()
+	}
 }
 
-func (self *Engine) push(timer *Timer) {
-	if timer.timestamp <= self.timestamp {
-		// panic("bad timer")
-		timer.setRunning(false)
-		atomic.AddInt32(&self.count, -1)
-		return
+func (e *Engine) calcTimers(pendings *tlist, slot *tlist) {
+	for node := slot.head; node != nil; {
+		curr := node
+		node = slot.remove(node)
+		if curr.timestamp < e.timestamp {
+			pendings.push(curr)
+		} else {
+			e.push(curr)
+		}
 	}
+}
 
-	delta := uint64(timer.timestamp - self.timestamp)
-	// check dynamic create wheel
-	for delta > self.timeMax {
-		self.newWheel()
-	}
+func (e *Engine) push(t *Timer) {
+	delta := uint64(t.timestamp - e.timestamp)
 
-	for i := 0; i < len(self.wheels); i++ {
-		wheel := self.wheels[i]
+	for i := 0; i < len(e.wheels); i++ {
+		wheel := e.wheels[i]
 		if delta < wheel.timeMax {
-			wheel.Push(timer, delta)
+			wheel.push(t, delta)
 			break
 		}
 	}
+}
+
+// addTimer 添加定时器
+func (e *Engine) addTimer(t *Timer) {
+	e.mutex.Lock()
+	if t.list == nil && t.timestamp > e.timestamp {
+		e.count++
+		e.push(t)
+	}
+	e.mutex.Unlock()
+}
+
+// delTimer 删除定时器
+func (e *Engine) delTimer(t *Timer) {
+	e.mutex.Lock()
+	if t.list != nil {
+		t.list.remove(t)
+		e.count--
+	}
+	e.mutex.Unlock()
 }

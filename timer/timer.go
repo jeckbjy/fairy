@@ -1,137 +1,84 @@
 package timer
 
-import (
-	"fmt"
-	"time"
+import "time"
 
-	"github.com/jeckbjy/fairy/container/inlist"
-)
+// Now 当前时间,毫秒单位
+func Now() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
 
-const (
-	ModeTimestamp = 0  // 时间戳执行
-	ModeDelay     = 1  // 延迟执行一次
-	ModeLoop      = -1 // 循环执行
-)
+// Start 快速启动定时器,delay时间间隔,period执行次数<=0表示一直执行
+func Start(delay int, period int, cb Callback) *Timer {
+	if delay <= 0 {
+		return nil
+	}
 
-const (
-	// Sec 毫秒转秒
-	Sec = 1000
-)
-
-// TimerCB 定时器回调
-type Callback func()
-
-// Start 启动一个定时器
-func Start(mode int, ts int64, cb Callback) *Timer {
 	t := New(cb)
-	t.Start(mode, ts)
+	t.delay = delay
+	t.period = period
+	t.timestamp = Now() + int64(t.delay)
+	t.Start()
 	return t
 }
 
-// New 创建一个Timer
+// StartAt 在某个固定时间执行
+func StartAt(timestamp int64, cb Callback) *Timer {
+	t := New(cb)
+	t.Start()
+	return t
+}
+
+// New 创建一个Timer,不启动
 func New(cb Callback) *Timer {
 	t := &Timer{}
-	t.cb = cb
 	t.engine = GetEngine()
+	t.cb = cb
 	return t
 }
 
-// Timer 定时器
+// Callback 回调函数
+type Callback func()
+
+// Timer 定时器,单独线程中执行
 type Timer struct {
-	inlist.Hook
-	engine    *Engine     // engine
-	cb        Callback    // 回调函数
-	running   bool        // 是否在运行中
-	mode      int         // 类型
-	timestamp int64       // 时间戳
-	delay     int64       // 不为零，表示是Delay模式
-	left      int         // 剩余时间,用于向前调时间时计算
-	Count     int         // 记录触发次数
-	Tag       int         // 自定义Tag
-	Data      interface{} // 自定义数据
+	prev      *Timer
+	next      *Timer
+	list      *tlist
+	engine    *Engine
+	cb        Callback // 回调函数
+	timestamp int64    // 到期时间
+	delay     int      // 延迟时间
+	period    int      // 执行周期
+	count     int      // 触发次数
 }
 
+// SetEngine 重置engine
 func (t *Timer) SetEngine(e *Engine) {
-	t.Stop()
 	t.engine = e
 }
 
-func (self *Timer) Start(mode int, ts int64) error {
-	if self.isRunning() {
-		return fmt.Errorf("timer is running")
-	}
-
-	if ts <= 0 {
-		return fmt.Errorf("timer bad input")
-	}
-
-	self.mode = mode
-	self.delay = ts
-	self.run()
-
-	return nil
+// Reset 重置时间
+func (t *Timer) Reset(ts int64) {
+	t.timestamp = ts
 }
 
-// Restart 重新开始,不能是时间戳类型
-func (self *Timer) Restart() {
-	if self.mode == ModeTimestamp {
-		return
-	}
-
-	self.Stop()
-	self.run()
+// Start 启动定时器
+func (t *Timer) Start() {
+	t.engine.addTimer(t)
 }
 
-func (self *Timer) Stop() {
-	if self.isRunning() {
-		self.engine.DelTimer(self)
-	}
+// Cancel 取消定时器
+func (t *Timer) Cancel() {
+	t.engine.delTimer(t)
+	t.delay = 0
 }
 
-func (self *Timer) run() {
-	switch self.mode {
-	case ModeTimestamp:
-		self.timestamp = self.delay
-	case ModeDelay, ModeLoop:
-		self.timestamp = time.Now().UnixNano()/int64(time.Millisecond) + self.delay
-	}
-
-	self.engine.AddTimer(self)
-}
-
-func (self *Timer) isRunning() bool {
-	return self.running
-}
-
-func (self *Timer) setRunning(flag bool) {
-	self.running = flag
-}
-
-func (self *Timer) call() {
-	if self.cb != nil {
-		self.setRunning(false)
-		self.Count++
-		self.cb()
-		// 无线循环
-		if self.mode == ModeLoop && self.delay > 0 {
-			self.run()
-		}
-	}
-}
-
-// 当向前调时间时,如果是delay模式，会重新计算剩余时间
-func (self *Timer) reset(oldTime int64, newTime int64) {
-	if self.mode == ModeTimestamp {
-		return
-	}
-
-	if self.left == 0 {
-		self.left = int(self.delay)
-	}
-	elapse := self.timestamp - oldTime
-	delay := int64(self.left) - elapse
-	if delay > 0 {
-		self.left = int(delay)
-		self.timestamp = newTime + delay
+func (t *Timer) invoke() {
+	t.count++
+	t.cb()
+	// 继续执行
+	if t.delay > 0 && (t.period <= 0 || t.count < t.period) {
+		t.timestamp = Now() + int64(t.delay)
+		t.Start()
 	}
 }
